@@ -92,7 +92,8 @@
    reference screenshot, overriding its default floating green "^" look
    (white border on white background, invisible). */
 #pendo-button-3b0ed2d6 {
-  position: absolute !important;
+      position: absolute !important;
+
   top: 16px !important;
   right: 24px !important;
   z-index: 5 !important;
@@ -123,7 +124,8 @@
    empty space in normal flow (the button is out of flow either way, being
    absolutely positioned, but the row itself still had its own min-height). */
 #pendo-row-90f5fe12 {
-  height: 0 !important;
+      height: 0 !important;
+
   min-height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -429,7 +431,7 @@
    every render (flex only for Learn & Level-up with at least one eligible
    add-on). */
 #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser {
-/*   display: none; */
+  display: none; 
   flex: 1 1 auto !important;
      /*   justify-content: center; for center alignment*/
   min-width: 0 !important;
