@@ -335,7 +335,8 @@ console.log('run pendo function');
     }
   }
 
-  let hydrationComplete = readStoredHydration();
+  let hydrationComplete = false;
+      //readStoredHydration();
   let hydrationResolved = hydrationComplete;
   let hydrationFetchInFlight = false;
 
@@ -547,7 +548,7 @@ console.log('run pendo function');
   // module's translated copy, or — while the Qlik Experience module is
   // still locked — the hydration-loading message in place of it.
   function updateNextUp(guideId) {
-       console.log('updateNextUp');
+      // console.log('updateNextUp text elements');
     const container = document.getElementById(NEXT_UP_TEXT_ID);
     if (!container) return;
     const boldEl = container.querySelector('strong');
@@ -560,7 +561,7 @@ console.log('run pendo function');
   }
 
   function updateDuration(guideId) {
-            console.log('updateDuration');
+           // console.log('updateDuration');
     const durationEl = document.getElementById(DURATION_TEXT_ID);
     if (!durationEl) return;
     if (isQlikExperienceLocked(guideId)) {
@@ -576,7 +577,7 @@ console.log('run pendo function');
   // module" — except while the Qlik Experience module is still locked,
   // when it becomes the "Refresh" control instead (see bindActionButtonCapture).
   function updateActionButton(guideId) {
-      console.log('updateActionButton');
+      //console.log('updateActionButton');
     const btn = document.getElementById(WATCH_NOW_BUTTON_ID);
     if (!btn) return;
     if (isQlikExperienceLocked(guideId)) {
@@ -593,11 +594,12 @@ console.log('run pendo function');
   }
 
   function updateSelection() {
-      console.log('update selection');
+          console.log('update selection');
     currentDisplayGuideId = selectedGuideId || activeGuideId;
     updateNextUp(currentDisplayGuideId);
     updateDuration(currentDisplayGuideId);
     updateActionButton(currentDisplayGuideId);
+      //maybe only if its the learn and level up module?
     updateAddOnChooser(currentDisplayGuideId);
   }
 
@@ -800,8 +802,9 @@ console.log('run pendo function');
     })
       .then(res => res.json())
       .then(data => {
-        hydrationComplete = !!(data && data.status === 'synced');
-        if (hydrationComplete) storeHydrationComplete();
+          hydrationComplete = false;
+       // hydrationComplete = !!(data && data.status === 'synced');
+     //   if (hydrationComplete) storeHydrationComplete();
       })
       .catch(err => {
         console.error('Error fetching hydration status, defaulting hydrationComplete to false:', err);
