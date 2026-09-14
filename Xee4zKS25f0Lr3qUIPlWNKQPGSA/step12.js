@@ -8,7 +8,35 @@
         var copyButtonSelector = '#pendo-button-0e93bea8';
         var assistantName = 'Spark Electronics Assistant';
         var hasTriggered = false;
+        var hasAdvanced = false;
         var settleDelayMs = 800; // how long the element must remain present before we advance
+        // goToStep can silently do nothing if Pendo isn't able to show the
+        // destination step at that moment, which used to leave the visitor
+        // stuck until they pressed Enter again. So each advance is verified,
+        // and retried a couple of times if the destination step isn't showing.
+        var advanceVerifyMs = 700;
+        var maxAdvanceAttempts = 3;
+
+        // The document listeners and setup polling are tracked here and removed
+        // when the step is torn down. Otherwise every re-show of this step
+        // stacked another full set, and stale ones could still start a watch
+        // and call goToStep after the guide had moved on.
+        //
+        // A watch that's already in progress (response observer + settle
+        // timer) is deliberately NOT cancelled on teardown: if Pendo re-renders
+        // this step while the response is loading, the fresh copy of this
+        // script only reacts to a new send, so cancelling would leave the
+        // visitor needing to press Enter again. Duplicate advances from an old
+        // and a new copy are prevented by the page-level guard in advance().
+        var cleanups = [];
+        function onCleanup(fn) { cleanups.push(fn); }
+        if (typeof step !== 'undefined' && step && typeof step.after === 'function') {
+            step.after('teardown', function () {
+                cleanups.forEach(function (fn) { try { fn(); } catch (e) { /* ignore */ } });
+                cleanups = [];
+            });
+        }
+        var ADVANCE_GUARD_MS = 5000;
 
         // --- Helpers: wait for elements (by selector or by text match) ---
         function waitForElement(selector, callback, timeoutMs) {
@@ -29,6 +57,7 @@
                     }
                 }
             }, intervalMs);
+            onCleanup(function () { clearInterval(interval); });
         }
 
         function findButtonByAssistantName(containerSelector, name) {
@@ -64,6 +93,7 @@
                     }
                 }
             }, intervalMs);
+            onCleanup(function () { clearInterval(interval); });
         }
 
         function pathMatchesSelector(e, selector) {
@@ -76,14 +106,62 @@
             return false;
         }
 
+        function getDestinationStep() {
+            try {
+                var currentGuide = pendo.findGuideById(guide.id);
+                var steps = (currentGuide && currentGuide.steps) || [];
+                for (var i = 0; i < steps.length; i++) {
+                    if (steps[i].id === desiredStepId) return steps[i];
+                }
+            } catch (e) { /* fall through */ }
+            return null;
+        }
+
+        // Calls goToStep, then checks the destination step actually showed.
+        // Not tied to this step's teardown: a successful goToStep tears this
+        // step down, and a failed one might too — the check is what tells
+        // the two apart. Retries stop as soon as the destination is showing.
+        function advance(attempt) {
+            if (attempt === 1) {
+                // Page-level, so an old copy of this script (whose watch
+                // outlived a teardown) and a new one can't both advance.
+                var lastAdvance = window.__pmjStep12AdvancedAt || 0;
+                if (Date.now() - lastAdvance < ADVANCE_GUARD_MS) {
+                    console.log('already advancing from another copy of this step, skipping');
+                    hasAdvanced = true;
+                    return;
+                }
+                window.__pmjStep12AdvancedAt = Date.now();
+            }
+            hasAdvanced = true;
+            console.log('advancing to step ' + desiredStepId + ' (attempt ' + attempt + ')');
+            pendo.goToStep({ destinationStepId: desiredStepId });
+            setTimeout(function () {
+                var destination = getDestinationStep();
+                if (!destination || typeof destination.isShown !== 'function') return;
+                if (destination.isShown()) {
+                    console.log('destination step is showing');
+                    return;
+                }
+                if (attempt < maxAdvanceAttempts) {
+                    pendo.log(guide.id + ': destination step not showing after goToStep, retrying');
+                    console.log('destination step not showing yet, retrying goToStep');
+                    advance(attempt + 1);
+                } else {
+                    pendo.log(guide.id + ': ERROR - destination step still not showing after ' + attempt + ' goToStep attempts');
+                }
+            }, advanceVerifyMs);
+        }
+
         function confirmAndAdvance() {
             console.log('confirm and advance');
             setTimeout(function () {
+                if (hasAdvanced) return;
                 var el = document.querySelector(responseSelector);
                 if (el) {
                     pendo.log(guide.id + ': response wrapper stable after ' + settleDelayMs + 'ms, advancing to step ' + desiredStepId);
                     console.log('stable, go to designated step');
-                    pendo.goToStep({ destinationStepId: desiredStepId });
+                    advance(1);
                 } else {
                     console.log('instable and disappeared,hold on again');
                     pendo.log(guide.id + ': response wrapper disappeared before settling, resetting watch');
@@ -95,6 +173,7 @@
 
         function watchForResponse() {
                 console.log('watch for response code started');
+            if (hasAdvanced) return;
             if (hasTriggered) {
                 pendo.log('watch already triggered, ignoring duplicate call');
                 console.log('watch already triggered');
@@ -152,44 +231,56 @@
             });
         }
 
+        function listen(type, handler) {
+            document.addEventListener(type, handler, true);
+            onCleanup(function () { document.removeEventListener(type, handler, true); });
+        }
+
         function attachListeners() {
-            document.addEventListener('click', function onDocumentClick(e) {
+            listen('click', function onDocumentClick(e) {
                 if (pathMatchesSelector(e, actionButtonSelector)) {
                     watchForResponse();
                 }
-            }, true);
+            });
 
-            document.addEventListener('keydown', function onDocumentKeydown(e) {
-                if (e.key === 'Enter' && !e.shiftKey && pathMatchesSelector(e, textAreaSelector)) {
+            listen('keydown', function onDocumentKeydown(e) {
+                // isComposing: Enter that confirms an IME composition (e.g.
+                // Japanese/Chinese input) doesn't send the message.
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && pathMatchesSelector(e, textAreaSelector)) {
                     pendo.log(guide.id + ': Enter key pressed in text area, starting DOM watch for response');
                     watchForResponse();
                 }
-            }, true);
+            });
 
-            document.addEventListener('click', function onDocumentClickCopy(e) {
+            listen('click', function onDocumentClickCopy(e) {
                 var copyBtn = e.target.closest ? e.target.closest(copyButtonSelector) : null;
                 if (copyBtn) {
                     copyButtonText(copyBtn);
                 }
-            }, true);
+            });
         }
+
+        // Listen for send (click/Enter) right away. These used to be attached
+        // only after the whole agent/assistant selection sequence below had
+        // finished (several polled waits), so an Enter pressed before then
+        // was never seen — the visitor had to press Enter a second time.
+        attachListeners();
 
         // --- Setup sequence: open agent selector, pick "assistant", pick the specific assistant ---
         waitForElement('[data-testid="ua-agent-selector"]', function (el) {
-            if (!el) { return attachListeners(); } // proceed anyway rather than block forever
+            if (!el) { return; } // listeners are already attached; nothing more to set up
             el.click();
             pendo.log(guide.id + ': clicked agent selector');
             //console.log('clicked agent selector');
             waitForElement('[data-testid="ua-agent-selector-assistant"] > button', function (el2) {
-                if (!el2) { return attachListeners(); }
+                if (!el2) { return; }
                 el2.click();
                 pendo.log(guide.id + ': clicked assistant option');
 
                 waitForAssistantButton('[data-testid="sprout-floating"]', assistantName, function (el3) {
-                    if (!el3) { return attachListeners(); }
+                    if (!el3) { return; }
                     el3.click();
                     pendo.log(guide.id + ': clicked assistant selection button - ' + assistantName);
-                    attachListeners();
                 });
             });
         });
