@@ -1,5 +1,6 @@
 (function () {
   if (!pendo.designerEnabled) {
+console.log('run pendo function');
 
   // Centralized ids — every id below is specific to this step's own DOM.
   // These are all stable *block-level* ids (confirmed unchanged across
