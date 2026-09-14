@@ -12,6 +12,14 @@
 #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So {
   border-bottom: 1px solid #E3E3E3 !important;
 }
+/* The outer step box carries a stale designer-time pixel height inline.
+   firstStep.js also forces it to auto (fixStepContainerHeight), but that
+   only runs after the step has been hidden and set up — doing it here too
+   means the space it takes on the page is already right from the start,
+   so content below doesn't jump when the step is revealed. */
+._pendo-step-container-size:has(#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So) {
+  height: auto !important;
+}
 
 /* ---------- 1. Header row: "Qlik Unlocked | subtitle" ---------- */
 
@@ -426,10 +434,11 @@
    flattened into wrapping icon+label pills. Everything below is scoped to
    this step's own guide container so an #addOnChooser on any other step
    is never affected. Every option is shown; eligible ones get is-active
-   (green border), the rest stay plain white pills. There's no display
-   default here — updateAddOnChooser sets display:flex or display:none on
-   every render (flex only for Learn & Level-up with at least one eligible
-   add-on). */
+   (green border), the rest stay plain white pills. Hidden by default
+   (display:none, no !important) so it never shows before the script runs;
+   updateAddOnChooser overrides it with an inline display:flex/none
+   !important whenever visibility changes (flex only for Learn & Level-up
+   with at least one eligible add-on). */
 #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser {
   display: none; 
   flex: 1 1 auto !important;

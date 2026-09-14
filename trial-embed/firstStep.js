@@ -303,6 +303,31 @@ console.log('run pendo function');
     return window.__pmjFirstStepRunId !== RUN_ID;
   }
 
+  // ---------- Hide until ready ----------
+  // Every time Pendo shows this step (page load, page change, re-show), its
+  // raw authored layout — and then its own post-script layout pass — would
+  // paint before the initial setup below runs, which read as a quick
+  // layout flicker. Pendo runs this script right after inserting the step,
+  // before the browser paints, so hiding it here means neither ever shows;
+  // revealStep() un-hides it once the initial setup has run. Done with our
+  // own <style> element rather than a class on Pendo's DOM, so a Pendo
+  // re-render can't strip it and leave the guide stuck hidden.
+  const HIDE_STYLE_ID = 'pmj-firststep-hide-until-ready';
+
+  function hideStepUntilReady() {
+    if (document.getElementById(HIDE_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = HIDE_STYLE_ID;
+    style.textContent = '#' + GUIDE_CONTAINER_ID + ' { visibility: hidden !important; }';
+    document.head.appendChild(style);
+  }
+
+  function revealStep() {
+    document.getElementById(HIDE_STYLE_ID)?.remove();
+  }
+
+  hideStepUntilReady();
+
   // ---------- Hydration status ----------
   // A tenant can't un-hydrate, so once the API reports "synced" it's saved
   // in localStorage (keyed by visitor, so another user on the same browser
@@ -921,7 +946,13 @@ console.log('run pendo function');
     const mutations = pendingMutations;
     pendingMutations = [];
     console.log('initial setup', RUN_ID, '—', Date.now() - scriptStartTime, 'ms after script start — Pendo mutations while waiting (' + mutations.length + '):', mutations.slice(0, 15));
-    withObserverPaused(setup);
+    try {
+      withObserverPaused(setup);
+    } finally {
+      // Always un-hide, even if setup threw or found nothing to set up —
+      // a broken layout is better than a guide that never appears.
+      revealStep();
+    }
   }
 
   const observer = new MutationObserver(records => {
