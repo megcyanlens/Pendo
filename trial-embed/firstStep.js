@@ -286,6 +286,22 @@
 
   const T = TRANSLATIONS[getLocale()] || TRANSLATIONS.en;
 
+  // Pendo re-runs this whole script every time it shows this step, but the
+  // previous run's observer, in-flight hydration fetch and click handlers
+  // stay alive. Two runs rendering the same DOM fight each other: each
+  // one's render trips the other's observer, and each keeps its own
+  // selectedGuideId, so a step click from one run is immediately reverted
+  // by the other — the checklist looks unclickable. Each run claims
+  // ownership here; anything left over from an older run checks
+  // isStaleRun() and does nothing.
+  const RUN_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  window.__pmjFirstStepRunId = RUN_ID;
+  console.log('firstStep script run', RUN_ID);
+
+  function isStaleRun() {
+    return window.__pmjFirstStepRunId !== RUN_ID;
+  }
+
   let hydrationResolved = false;
   let hydrationComplete = false;
   let hydrationFetchInFlight = false;
@@ -423,7 +439,7 @@
     const btn = document.getElementById(WATCH_NOW_BUTTON_ID);
     if (!btn) return;
     if (isQlikExperienceLocked(guideId)) {
-      btn.textContent = T.buttons.refresh;
+      btn.textContent = hydrationFetchInFlight ? T.buttons.refreshing : T.buttons.refresh;
       return;
     }
     if (guideId === WELCOME_VIDEO_GUIDE_ID) {
@@ -446,10 +462,12 @@
   function bindStepClickHandlers(list) {
       console.log('bind step click handler');
     list.querySelectorAll('li').forEach(li => {
-      if (li.dataset.pmjClickBound) return;
+      // Compared against RUN_ID (not just "is set") so a <li> bound by an
+      // older run gets re-cloned, dropping that run's listener.
+      if (li.dataset.pmjClickBound === RUN_ID) return;
       const guideId = li.getAttribute('data-pendo-show-guide-id');
       const newLi = li.cloneNode(true);
-      newLi.dataset.pmjClickBound = '1';
+      newLi.dataset.pmjClickBound = RUN_ID;
       li.parentNode.replaceChild(newLi, li);
       newLi.addEventListener('click', function (e) {
         e.preventDefault();
@@ -501,30 +519,56 @@
     updateAddOnChooser(currentDisplayGuideId);
   }
 
-  // While NEXT UP is showing the still-locked Qlik Experience module, this
-  // button re-runs the hydration check instead of launching a guide;
-  // fetchHydrationStatus's own re-render afterward picks up whatever it
-  // resolved to (back to translated Watch Now/Start module copy, plus the
-  // unlocked module's own description, if it's now synced — otherwise
-  // still the Refresh control). Bound once (guarded by a data attribute)
-  // since the button itself is never moved or recreated by
-  // relocateNextUpControls — only read at click-time via
-  // currentDisplayGuideId, which refreshState keeps up to date.
+  // Unlocked: the action button launches whichever module NEXT UP shows.
+  // Bound once per run (guarded by a data attribute) since the button
+  // itself is never moved or recreated by relocateNextUpControls — only
+  // read at click-time via currentDisplayGuideId, which refreshState keeps
+  // up to date. The locked (Refresh) case never reaches this listener —
+  // see bindRefreshClick.
   function bindWatchNowClick() {
       console.log('bind watch now click');
     const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
-    if (!watchNowButton || watchNowButton.dataset.pmjClickBound) return;
-    watchNowButton.dataset.pmjClickBound = '1';
+    if (!watchNowButton || watchNowButton.dataset.pmjClickBound === RUN_ID) return;
+    watchNowButton.dataset.pmjClickBound = RUN_ID;
     watchNowButton.addEventListener('click', function (e) {
+      if (isStaleRun()) return;
       e.preventDefault();
-      if (isQlikExperienceLocked(currentDisplayGuideId)) {
-        if (hydrationFetchInFlight) return;
-        watchNowButton.textContent = T.buttons.refreshing;
-        fetchHydrationStatus();
-        return;
-      }
       if (currentDisplayGuideId) pendo.showGuideById(currentDisplayGuideId);
     });
+  }
+
+  // While NEXT UP is showing the still-locked Qlik Experience module, the
+  // action button re-runs the hydration check instead of launching a guide;
+  // fetchHydrationStatus's own re-render afterward picks up whatever it
+  // resolved to (back to translated Watch Now/Start module copy, plus the
+  // unlocked module's own description, if it's now synced — otherwise
+  // still the Refresh control).
+  //
+  // It's a real Pendo button, so the action authored on it in the designer
+  // (bound by Pendo before this script runs) fires on every click too —
+  // preventDefault() doesn't stop it. As Refresh, that action re-shows the
+  // guide mid-refresh, which re-renders the step and re-runs this script.
+  // A capture-phase listener on document runs before any listener on the
+  // button itself, so stopPropagation() here keeps the click from ever
+  // reaching Pendo's. Unlocked clicks pass straight through untouched.
+  // Bound on document, once per run; older runs' listeners bail out via
+  // isStaleRun().
+  function bindRefreshClick() {
+    document.addEventListener('click', function (e) {
+      if (isStaleRun()) return;
+      const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
+      if (!watchNowButton || !watchNowButton.contains(e.target)) return;
+      if (!isQlikExperienceLocked(currentDisplayGuideId)) return;
+      console.log('refresh click intercepted', RUN_ID);
+      e.preventDefault();
+      e.stopPropagation();
+      if (hydrationFetchInFlight) return;
+      // Sets hydrationFetchInFlight first, so updateActionButton (run by
+      // the observer re-render this text change triggers) keeps showing
+      // "Refreshing…" instead of flipping straight back to "Refresh".
+      fetchHydrationStatus();
+      watchNowButton.textContent = T.buttons.refreshing;
+    }, true);
   }
 
   // A visitor is only "eligible" for an add-on once its own segmented guide
@@ -564,9 +608,10 @@
   function bindAddOnChooserClick() {
       console.log('bind addon Chooser Click');
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
-    if (!chooser || chooser.dataset.pmjClickBound) return;
-    chooser.dataset.pmjClickBound = '1';
+    if (!chooser || chooser.dataset.pmjClickBound === RUN_ID) return;
+    chooser.dataset.pmjClickBound = RUN_ID;
     chooser.addEventListener('click', function (e) {
+      if (isStaleRun()) return;
       const option = e.target.closest('.guide-image');
       if (!option) return;
       const cls = [...option.classList].find(c => addOnGuideMap[c]);
@@ -687,6 +732,12 @@
   function renderProtected() {
           console.log('render protected');
     observer.disconnect();
+    // A newer run owns the DOM now — stop for good (observer stays
+    // disconnected) instead of fighting it.
+    if (isStaleRun()) {
+      console.log('stale firstStep run, stopping', RUN_ID);
+      return;
+    }
     render();
     observer.observe(observedRoot, { childList: true, subtree: true });
   }
@@ -702,6 +753,7 @@
   });
   observer.observe(observedRoot, { childList: true, subtree: true });
 
+  bindRefreshClick();
   fetchHydrationStatus();
 
   }
