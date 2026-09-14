@@ -295,6 +295,9 @@ console.log('run pendo function');
   const RUN_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   window.__pmjFirstStepRunId = RUN_ID;
   console.log('firstStep script run', RUN_ID);
+  // Debug only: expand this in the console to see what made Pendo run the
+  // script (e.g. whether a click handler is in the call stack).
+  console.trace('firstStep script run — call stack', RUN_ID);
 
   function isStaleRun() {
     return window.__pmjFirstStepRunId !== RUN_ID;
@@ -352,6 +355,8 @@ console.log('run pendo function');
   // Whether the visitor is eligible for at least one add-on, computed in
   // applyAddOnEligibility.
   let addOnsEligible = false;
+  // Whether the add-on chooser is currently shown (null = not set yet).
+  let addOnChooserShown = null;
 
   function isStepCompleted(li) {
                    console.log('isStepCompleted');
@@ -507,14 +512,17 @@ console.log('run pendo function');
   // only once the visitor is actually eligible for at least one add-on —
   // otherwise it's an empty row of nothing they can act on. Hidden by
   // setting display directly on the table, since a <table> doesn't
-  // collapse the way a Pendo row does. Just a display toggle — safe to run
-  // on every step click.
+  // collapse the way a Pendo row does. Does nothing unless visibility
+  // actually changes (e.g. moving onto or off Learn & Level-up) — setup()
+  // resets addOnChooserShown so a freshly rebuilt table always gets set.
   function updateAddOnChooser(guideId) {
-      console.log('update add on chooser');
+    const shouldShow = guideId === LEARN_LEVEL_UP_GUIDE_ID && addOnsEligible;
+    if (shouldShow === addOnChooserShown) return;
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
     if (!chooser) return;
-    const shouldShow = guideId === LEARN_LEVEL_UP_GUIDE_ID && addOnsEligible;
+      console.log('update add on chooser', shouldShow ? 'show' : 'hide');
     chooser.style.setProperty('display', shouldShow ? 'flex' : 'none', 'important');
+    addOnChooserShown = shouldShow;
   }
 
   // Clicking any cell launches its guide, regardless of that cell's
@@ -547,7 +555,11 @@ console.log('run pendo function');
   // item itself (see getStepLabel); the description is either this
   // module's translated copy, or — while the Qlik Experience module is
   // still locked — the hydration-loading message in place of it.
-  function updateNextUp(guideId) {
+  //
+  // updateNextUp/updateDuration/updateActionButton all take `locked`
+  // (isQlikExperienceLocked for guideId) from their caller, so it's
+  // checked once per update rather than once per function.
+  function updateNextUp(guideId, locked) {
       // console.log('updateNextUp text elements');
     const container = document.getElementById(NEXT_UP_TEXT_ID);
     if (!container) return;
@@ -555,16 +567,16 @@ console.log('run pendo function');
     const descEl = container.querySelector('span');
     const list = document.getElementById(LIST_ID);
     const label = list ? getStepLabel(list, guideId) : '';
-    const description = isQlikExperienceLocked(guideId) ? T.hydrationLoading : T.descriptions[guideId];
+    const description = locked ? T.hydrationLoading : T.descriptions[guideId];
     if (boldEl) boldEl.textContent = label ? (description ? label + ' —' : label) : '';
     if (descEl) descEl.textContent = description ? (label ? ' ' : '') + description : '';
   }
 
-  function updateDuration(guideId) {
+  function updateDuration(guideId, locked) {
            // console.log('updateDuration');
     const durationEl = document.getElementById(DURATION_TEXT_ID);
     if (!durationEl) return;
-    if (isQlikExperienceLocked(guideId)) {
+    if (locked) {
       durationEl.textContent = '';
       return;
     }
@@ -576,11 +588,11 @@ console.log('run pendo function');
   // now", the survey gets "Take survey", everything else gets "Start
   // module" — except while the Qlik Experience module is still locked,
   // when it becomes the "Refresh" control instead (see bindActionButtonCapture).
-  function updateActionButton(guideId) {
+  function updateActionButton(guideId, locked) {
       //console.log('updateActionButton');
     const btn = document.getElementById(WATCH_NOW_BUTTON_ID);
     if (!btn) return;
-    if (isQlikExperienceLocked(guideId)) {
+    if (locked) {
       btn.textContent = hydrationFetchInFlight ? T.buttons.refreshing : T.buttons.refresh;
       return;
     }
@@ -596,10 +608,10 @@ console.log('run pendo function');
   function updateSelection() {
           console.log('update selection');
     currentDisplayGuideId = selectedGuideId || activeGuideId;
-    updateNextUp(currentDisplayGuideId);
-    updateDuration(currentDisplayGuideId);
-    updateActionButton(currentDisplayGuideId);
-      //maybe only if its the learn and level up module?
+    const locked = isQlikExperienceLocked(currentDisplayGuideId);
+    updateNextUp(currentDisplayGuideId, locked);
+    updateDuration(currentDisplayGuideId, locked);
+    updateActionButton(currentDisplayGuideId, locked);
     updateAddOnChooser(currentDisplayGuideId);
   }
 
@@ -684,7 +696,7 @@ console.log('run pendo function');
       if (hydrationFetchInFlight) return;
       fetchHydrationStatus();
       // hydrationFetchInFlight is now set, so this shows "Refreshing…".
-      withObserverPaused(updateActionButton.bind(null, currentDisplayGuideId));
+      withObserverPaused(updateActionButton.bind(null, currentDisplayGuideId, true));
     }, true);
   }
 
@@ -764,27 +776,41 @@ console.log('run pendo function');
     bindWatchNowClick();
     bindAddOnChooserClick();
     fixStepContainerHeight();
+    addOnChooserShown = null;
     updateSelection();
   }
 
-  // True while everything setup() did is still in place. A Pendo rebuild
-  // (observed on window resize) re-creates the step from its authored
-  // template, so the fresh <li>s lose their click binding and the divider,
-  // connectors and relocated Duration/button are gone — any one of those
-  // missing means setup() needs to run again. Our own text updates (NEXT
-  // UP, button label) also trip the observer, but leave all of these
-  // intact, so they cost nothing more than this check.
-  function isLayoutIntact() {
+  // Null while everything setup() did is still in place; otherwise a short
+  // description of what's missing. A Pendo rebuild (observed on window
+  // resize) re-creates the step from its authored template, so the fresh
+  // <li>s lose their click binding and the divider, connectors and
+  // relocated Duration/button are gone — any one of those missing means
+  // setup() needs to run again.
+  function getLayoutProblem() {
     const list = document.getElementById(LIST_ID);
-    if (!list) return true;
+    if (!list) return null;
     const items = [...list.querySelectorAll('li')];
-    if (items.some(li => li.dataset.pmjClickBound !== RUN_ID)) return false;
-    if (items.length > 1 && !list.querySelector('.pmj-connector')) return false;
+    const unbound = items.filter(li => li.dataset.pmjClickBound !== RUN_ID).length;
+    if (unbound) return unbound + ' of ' + items.length + ' <li>s not bound by this run';
+    if (items.length > 1 && !list.querySelector('.pmj-connector')) return 'connectors missing';
     const nextUpRow = document.getElementById(NEXT_UP_ROW_ID);
-    if (nextUpRow && !nextUpRow.previousElementSibling?.classList.contains('pmj-divider')) return false;
+    if (nextUpRow && !nextUpRow.previousElementSibling?.classList.contains('pmj-divider')) return 'divider missing';
     const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
-    if (watchNowButton && !watchNowButton.closest('.pmj-nextup-right')) return false;
-    return true;
+    if (watchNowButton && !watchNowButton.closest('.pmj-nextup-right')) return 'action button not in NEXT UP row';
+    return null;
+  }
+
+  // Debug only: a one-line summary of a MutationRecord, so the observer can
+  // log what Pendo actually changed.
+  function describeNode(node) {
+    if (!node || node.nodeType !== 1) return node && node.nodeType === 3 ? '#text' : String(node && node.nodeName);
+    return node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + (node.className && typeof node.className === 'string' ? '.' + node.className.trim().split(/\s+/).join('.') : '');
+  }
+
+  function describeMutation(m) {
+    const added = [...m.addedNodes].map(describeNode);
+    const removed = [...m.removedNodes].map(describeNode);
+    return describeNode(m.target) + (added.length ? ' +[' + added.join(', ') + ']' : '') + (removed.length ? ' -[' + removed.join(', ') + ']' : '');
   }
 
   // ---------- Hydration fetch ----------
@@ -838,18 +864,26 @@ console.log('run pendo function');
     observer.observe(observedRoot, { childList: true, subtree: true });
   }
 
-  const observer = new MutationObserver(() => {
+  // Debug only: mutations seen since the last check, logged with it.
+  let pendingMutations = [];
+
+  const observer = new MutationObserver(records => {
                          console.log('observer');
+    records.forEach(m => pendingMutations.push(describeMutation(m)));
     if (checkScheduled) return;
     checkScheduled = true;
     requestAnimationFrame(() => {
       checkScheduled = false;
+      const mutations = pendingMutations;
+      pendingMutations = [];
       if (isStaleRun()) {
         console.log('stale firstStep run, stopping', RUN_ID);
         observer.disconnect();
         return;
       }
-      if (isLayoutIntact()) return;
+      const problem = getLayoutProblem();
+      console.log('observer check', RUN_ID, '— problem:', problem || 'none', '— mutations (' + mutations.length + '):', mutations.slice(0, 15));
+      if (!problem) return;
       console.log('layout wiped by Pendo, running setup again');
       withObserverPaused(setup);
     });
