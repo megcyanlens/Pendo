@@ -338,8 +338,7 @@ console.log('run pendo function');
     }
   }
 
-  let hydrationComplete = false;
-      //readStoredHydration();
+  let hydrationComplete = readStoredHydration();
   let hydrationResolved = hydrationComplete;
   let hydrationFetchInFlight = false;
 
@@ -830,9 +829,8 @@ console.log('run pendo function');
     })
       .then(res => res.json())
       .then(data => {
-          hydrationComplete = false;
-       // hydrationComplete = !!(data && data.status === 'synced');
-     //   if (hydrationComplete) storeHydrationComplete();
+        hydrationComplete = !!(data && data.status === 'synced');
+        if (hydrationComplete) storeHydrationComplete();
       })
       .catch(err => {
         console.error('Error fetching hydration status, defaulting hydrationComplete to false:', err);
