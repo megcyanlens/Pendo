@@ -112,53 +112,95 @@
   // Launching any checklist module from step 1 collapses this embedded
   // guide to this step first. Once the visitor dismisses that module guide,
   // re-show the embedded guide, which starts it over at step 1.
+  //
+  // This Pendo agent has no pendo.Events to subscribe to guideDismissed, so
+  // a dismiss is detected two ways (whichever fires first wins; the other
+  // is ignored):
+  //   1. pendo.onGuideDismissed — documented as "Hides the current guide
+  //      and invokes the guideDismissed event" — is wrapped so we see every
+  //      call to it before Pendo's own dismiss runs.
+  //   2. A click on any ._pendo-close-guide button, as a backup in case
+  //      Pendo dismisses through an internal reference that bypasses the
+  //      public function.
+  // Both are registered once per page, not once per run: Pendo re-runs
+  // this script on every show, and stacked listeners would each re-show
+  // the guide. So the handlers below read everything from the DOM/Pendo at
+  // dismiss time instead of from any single run's state.
   const EMBEDDED_GUIDE_ID = 'qs5WkFBQ0jzlVQsLMKkLoSCEaxg';
 
-  // The dismiss event's payload shape isn't documented, so check the
-  // likely places a guide id could be — and log the raw payload whenever
-  // none is found, so the right field can be pinned down from the console.
-  function getDismissedGuideId(evt) {
-    const e = evt && evt.data && evt.data[0] ? evt.data[0] : evt;
-    if (!e) return null;
-    if (typeof e === 'string') return e;
-    return e.guideId || e.guide_id || (e.props && e.props.guide_id) || (e.guide && e.guide.id) || e.id || null;
+  // The guide that's showing right now (still the one being dismissed, as
+  // both detection paths run before Pendo's own dismiss does).
+  function getActiveGuideId() {
+    try {
+      const active = pendo.getActiveGuide();
+      if (!active) return null;
+      return (active.guide && active.guide.id) || active.guideId || (active.step && active.step.guideId) || active.id || null;
+    } catch (err) {
+      return null;
+    }
   }
 
-  // Reads everything at dismiss time rather than from this run's closure:
-  // Pendo re-runs this script on every show, but the listener is only
-  // registered once per page (see below), so it must not depend on any
-  // single run's state.
-  function onGuideDismissed(evt) {
-    const guideId = getDismissedGuideId(evt);
+  // Fallback for the close-button path: a guide's container id is
+  // pendo-guide-container-<stepId>, so match that step id against each
+  // checklist module guide's steps.
+  function getModuleGuideIdForElement(el) {
+    const container = el.closest('[id^="pendo-guide-container-"]');
+    if (!container) return null;
+    const stepId = container.id.replace('pendo-guide-container-', '');
+    return getSteps().map(step => step.guideId).find(guideId => {
+      const guide = pendo.findGuideById(guideId);
+      return !!(guide && guide.steps && guide.steps.some(s => s.id === stepId));
+    }) || null;
+  }
+
+  function handleGuideDismissed(guideId, via, raw) {
     // Only while this step is the one showing — i.e. the visitor got here by
     // launching a module from step 1.
     if (!document.getElementById(GUIDE_CONTAINER_ID)) return;
-    const moduleGuideIds = getSteps().map(step => step.guideId);
     if (!guideId) {
-      console.log('shrunkenVersion: guideDismissed fired but no guide id found in payload:', evt);
+      console.log('shrunkenVersion: dismiss detected via', via, 'but no guide id found:', raw, 'active guide:', pendo.getActiveGuide && pendo.getActiveGuide());
       return;
     }
-    if (moduleGuideIds.indexOf(guideId) === -1) return;
-    console.log('shrunkenVersion: module guide dismissed', guideId, '— re-showing embedded guide', EMBEDDED_GUIDE_ID);
-    // Deferred so Pendo finishes processing the dismiss before the re-show.
+    const moduleGuideIds = getSteps().map(step => step.guideId);
+    if (moduleGuideIds.indexOf(guideId) === -1) {
+      console.log('shrunkenVersion: dismissed guide', guideId, 'via', via, 'is not a checklist module — ignoring');
+      return;
+    }
+    if (window.__pmjShrunkenReshowScheduled) return;
+    window.__pmjShrunkenReshowScheduled = true;
+    console.log('shrunkenVersion: module guide dismissed', guideId, 'via', via, '— re-showing embedded guide', EMBEDDED_GUIDE_ID);
+    // Deferred so Pendo finishes its own dismiss before the re-show.
     setTimeout(function () {
+      window.__pmjShrunkenReshowScheduled = false;
       pendo.showGuideById(EMBEDDED_GUIDE_ID);
     }, 0);
   }
 
-  // Registered once per page, not once per run, so repeated shows of this
-  // step don't stack up duplicate listeners (each would re-show the guide).
-  if (!window.__pmjShrunkenDismissListenerBound) {
-    if (pendo.Events && typeof pendo.Events.on === 'function') {
-      pendo.Events.on('guideDismissed', onGuideDismissed);
-      window.__pmjShrunkenDismissListenerBound = true;
-      console.log('shrunkenVersion: listening for guideDismissed via pendo.Events.on');
-    } else if (pendo.Events && pendo.Events.guideDismissed && typeof pendo.Events.guideDismissed.on === 'function') {
-      pendo.Events.guideDismissed.on(onGuideDismissed);
-      window.__pmjShrunkenDismissListenerBound = true;
-      console.log('shrunkenVersion: listening for guideDismissed via pendo.Events.guideDismissed.on');
-    } else {
-      console.log('shrunkenVersion: no guideDismissed event hook found on pendo.Events:', pendo.Events);
-    }
+  if (typeof pendo.onGuideDismissed === 'function' && !pendo.onGuideDismissed.__pmjWrapped) {
+    const originalOnGuideDismissed = pendo.onGuideDismissed;
+    const wrappedOnGuideDismissed = function () {
+      try {
+        const arg = arguments[0];
+        handleGuideDismissed((arg && arg.guideId) || getActiveGuideId(), 'onGuideDismissed', arg);
+      } catch (err) {
+        console.error('shrunkenVersion: dismiss handler failed:', err);
+      }
+      return originalOnGuideDismissed.apply(this, arguments);
+    };
+    wrappedOnGuideDismissed.__pmjWrapped = true;
+    pendo.onGuideDismissed = wrappedOnGuideDismissed;
+    console.log('shrunkenVersion: wrapped pendo.onGuideDismissed');
+  }
+
+  if (!window.__pmjShrunkenCloseListenerBound) {
+    window.__pmjShrunkenCloseListenerBound = true;
+    // Capture phase, so this runs before Pendo's own close handler hides the
+    // guide (while it's still the active guide).
+    document.addEventListener('click', function (e) {
+      const closeButton = e.target.closest && e.target.closest('._pendo-close-guide');
+      if (!closeButton) return;
+      handleGuideDismissed(getModuleGuideIdForElement(closeButton) || getActiveGuideId(), 'close button', closeButton);
+    }, true);
+    console.log('shrunkenVersion: listening for ._pendo-close-guide clicks');
   }
 })();
