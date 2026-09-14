@@ -90,7 +90,7 @@
    request, bubbles sit to the left of the progress bar) — the title and
    subtitle are Pendo's own original elements in #pendo-row-4dd80edf, left
    alone so their formatting doesn't change. right:104px leaves room for
-   the real maximize button (#pendo-button-fffba553 below) at right:60px
+   the real maximize button (#pendo-button-fffba553 below) at right:24px
    so the two don't overlap. top:16px is a starting guess for lining up
    with the title row's own text baseline — nudge it after seeing this
    live. */
@@ -187,7 +187,7 @@
 #pendo-button-fffba553 {
   position: absolute !important;
   top: 16px !important;
-  right: 60px !important;
+  right: 24px !important;
   z-index: 6 !important;
   width: 26px !important;
   height: 26px !important;
