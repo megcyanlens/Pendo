@@ -89,15 +89,15 @@
 /* Widget now only carries the bubbles + progress bar, in that order (per
    request, bubbles sit to the left of the progress bar) — the title and
    subtitle are Pendo's own original elements in #pendo-row-4dd80edf, left
-   alone so their formatting doesn't change. right:104px leaves room for
+   alone so their formatting doesn't change. right: 96px leaves room for
    the real maximize button (#pendo-button-fffba553 below) at right:24px
    so the two don't overlap. top:16px is a starting guess for lining up
    with the title row's own text baseline — nudge it after seeing this
    live. */
 .pmj-shrunken {
   position: absolute !important;
-  top: 16px !important;
-  right: 104px !important;
+  top: 17px !important;
+  right: 96px !important;
   z-index: 5 !important;
   display: flex !important;
   align-items: center !important;
