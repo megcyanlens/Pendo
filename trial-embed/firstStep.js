@@ -820,6 +820,8 @@ console.log('run pendo function');
   // are updated — nothing else depends on hydration.
   function fetchHydrationStatus() {
       console.log('fetch hydration status');
+    const wasResolved = hydrationResolved;
+    const wasComplete = hydrationComplete;
     hydrationFetchInFlight = true;
     fetch('/api/core/hydration-configurations/me', {
       method: 'GET',
@@ -840,7 +842,16 @@ console.log('run pendo function');
         hydrationResolved = true;
         hydrationFetchInFlight = false;
           console.log('hydration check finished, complete =', hydrationComplete);
-        if (isStaleRun()) return;
+        // Before the initial setup there's nothing to update yet — setup()
+        // applies the lock state itself once it runs.
+        if (isStaleRun() || !initialSetupDone) return;
+        // Unchanged (e.g. Refresh came back still not synced): the overlay
+        // and NEXT UP are already right — just put "Refreshing…" back to
+        // "Refresh".
+        if (wasResolved && wasComplete === hydrationComplete) {
+          withObserverPaused(() => updateActionButton(currentDisplayGuideId, isQlikExperienceLocked(currentDisplayGuideId)));
+          return;
+        }
         withObserverPaused(() => {
           const list = document.getElementById(LIST_ID);
           if (list) updateQlikExperienceLockState(list);
@@ -867,9 +878,41 @@ console.log('run pendo function');
   // Debug only: mutations seen since the last check, logged with it.
   let pendingMutations = [];
 
+  // Right after running this script, Pendo re-lays out the step's
+  // mock-flexbox rows (every row's wrappers are removed and rebuilt), which
+  // puts the action button back in its authored row and replaces the
+  // progress circles inside each <li>. Setting up before that pass just
+  // meant setting up twice, so the initial setup waits until the step's
+  // DOM has been quiet for SETUP_QUIET_MS — capped at SETUP_MAX_WAIT_MS
+  // after the script started, in case Pendo keeps touching it.
+  const SETUP_QUIET_MS = 50;
+  const SETUP_MAX_WAIT_MS = 1000;
+  const scriptStartTime = Date.now();
+  let initialSetupDone = false;
+  let initialSetupTimer = null;
+
+  function scheduleInitialSetup() {
+    clearTimeout(initialSetupTimer);
+    const remaining = SETUP_MAX_WAIT_MS - (Date.now() - scriptStartTime);
+    initialSetupTimer = setTimeout(runInitialSetup, Math.max(0, Math.min(SETUP_QUIET_MS, remaining)));
+  }
+
+  function runInitialSetup() {
+    if (initialSetupDone || isStaleRun()) return;
+    initialSetupDone = true;
+    const mutations = pendingMutations;
+    pendingMutations = [];
+    console.log('initial setup', RUN_ID, '—', Date.now() - scriptStartTime, 'ms after script start — Pendo mutations while waiting (' + mutations.length + '):', mutations.slice(0, 15));
+    withObserverPaused(setup);
+  }
+
   const observer = new MutationObserver(records => {
                          console.log('observer');
     records.forEach(m => pendingMutations.push(describeMutation(m)));
+    if (!initialSetupDone) {
+      scheduleInitialSetup();
+      return;
+    }
     if (checkScheduled) return;
     checkScheduled = true;
     requestAnimationFrame(() => {
@@ -891,7 +934,7 @@ console.log('run pendo function');
   observer.observe(observedRoot, { childList: true, subtree: true });
 
   bindActionButtonCapture();
-  withObserverPaused(setup);
+  scheduleInitialSetup();
   if (hydrationComplete) {
     console.log('hydration already complete (stored), skipping fetch');
   } else {
