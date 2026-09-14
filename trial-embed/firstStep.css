@@ -4,10 +4,9 @@
    of icon+label steps with connector lines underneath, then the NEXT UP line.
 
    Selectors are pinned to this step's specific element ids (or attribute hooks
-   scoped under its own container/list id) rather than the generic
-   [id^="pendo-row-"] / .pendo-mock-flexbox-* rules mainWindow.css already
-   defines globally, so this file always wins regardless of load order and
-   never fights mainWindow's own layout. */
+   scoped under its own container/list id) rather than generic
+   [id^="pendo-row-"] / .pendo-mock-flexbox-* selectors, so they never leak
+   into other steps' layouts. */
 
 /* ---------- 0. Whole guide ---------- */
 #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So {
@@ -55,11 +54,9 @@
    resize, #pendo-progress-bar-8276d870 stops existing anywhere in the DOM
    at all, not just outside .pmj-header-right). Absolute positioning
    achieves the same visual result without ever touching either element's
-   DOM parent, so Pendo's own reconciliation is never confused. This is
-   the same technique mainWindow.css already uses for its own progress bar
-   (#pendo-progress-bar-1e86bb5b), positioned against
-   #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So, which already has
-   position:relative from its own authored inline style. */
+   DOM parent, so Pendo's own reconciliation is never confused. Both are
+   positioned against #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So,
+   which already has position:relative from its own authored inline style. */
 /* height:26px (matching the minimize button below) + align-items:center
    makes the bar+text center within the same box the button occupies, so
    the two visually align on the same vertical center despite the button
@@ -131,15 +128,14 @@
   padding: 0 !important;
   margin: 0 !important;
 }
-/* mainWindow.css has a global rule forcing every .pendo-mock-flexbox-element
-   inside any row (selector [id^="pendo-row-"] ...) to position:relative —
-   that turns the button's own wrapper into ITS absolute-positioned button's
-   containing block, instead of the guide container the button rule above
-   actually intends. Since that wrapper sits wherever this now-collapsed
-   row happens to fall in the page (not at a fixed, known offset), the
-   button ended up positioned against the wrong reference point. Forcing
-   both wrappers back to static removes them as positioning contexts
-   entirely, so the button's position:absolute escapes up to
+/* Pendo positions its own mock-flexbox row/element wrappers, which turns
+   the button's wrapper into ITS absolute-positioned button's containing
+   block, instead of the guide container the button rule above actually
+   intends. Since that wrapper sits wherever this now-collapsed row happens
+   to fall in the page (not at a fixed, known offset), the button would be
+   positioned against the wrong reference point. Forcing both wrappers back
+   to static removes them as positioning contexts entirely, so the button's
+   position:absolute escapes up to
    #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So as intended. */
 #pendo-row-90f5fe12 .pendo-mock-flexbox-row,
 #pendo-row-90f5fe12 .pendo-mock-flexbox-element {
@@ -149,7 +145,7 @@
 /* Hide the standalone "Task List" heading — not present in the compact bar.
    Targets the rendered element id rather than data-wrapped-block-editing-id:
    that attribute is a designer-session UUID that can change on republish,
-   while the plain id is the stable hook (same convention as mainWindow.js). */
+   while the plain id is the stable hook. */
 #pendo-text-96bffe4e {
   display: none !important;
 }
@@ -294,8 +290,7 @@
   display: none !important;
 }
 
-/* Active step (the one that's "next up") pulses, matching mainWindow's
-   existing .is-active treatment */
+/* Active step (the one that's "next up") pulses */
 #pendo-list-e0407f46 .pendo-task-list-progress-circle.pmj-active-circle {
   border-radius: 50%;
   animation: pmj-mini-pulse 2s ease-in-out infinite;
@@ -311,10 +306,9 @@
    its own. The previous solid-disc-plus-white-checkmark treatment has
    been removed entirely per request. */
 
-/* Locked step ("The Qlik Experience" before hydration completes) — same
-   lock-icon-overlay treatment as mainWindow.css's own .pmj-lock-overlay/
-   .pmj-lock-icon (added/removed by minimizedVersion.js), just sized down
-   to fit this step's much smaller compact list item. The <li> itself is
+/* Locked step ("The Qlik Experience" before hydration completes) — a
+   .pmj-lock-overlay/.pmj-lock-icon (added/removed by minimizedVersion.js)
+   sized to fit this step's compact list item. The <li> itself is
    already position:relative from Pendo's own authored inline style, so
    the overlay's position:absolute anchors to it directly. */
 #pendo-list-e0407f46 > li.pmj-locked .pmj-lock-overlay {
@@ -424,20 +418,16 @@
 }
 
 /* ---------- 4. Add-on chooser (Learn & Level-up only) ---------- */
-/* Pasted from minimizedVersion.html into a code block, then moved by
-   minimizedVersion.js into the NEXT UP row itself, filling the space the
-   "Learn & Level-up — ..." description text occupied (hidden while this
-   shows). mainWindow.css's own #addOnChooser/td/.icon rules are UNSCOPED
-   globals sized for its big card (60-100px cells, 20-24px icons) — left
-   that way here too would either get overridden by (or override) that
-   step's own table depending on stylesheet load order, since both files'
-   selectors would collide. Everything below is scoped to this step's own
-   guide container so the two tables can never affect each other, and
-   shrunk down into single-line icon+label pills that actually fit inline
-   in a compact row — only the eligible options are shown at all (see
-   updateAddOnChooser), so there's no need for an inactive/grayed treatment
-   here, just a plain pill vs. one with a green border. display:none by
-   default; JS switches it to flex once eligible. */
+/* Pasted from minimizedVersion.html into its own code block, which stays
+   where it was authored — JS never moves it. Styled as a continuation of
+   the gray panel (same tint, rounded bottom corners) with the table
+   flattened into wrapping icon+label pills. Everything below is scoped to
+   this step's own guide container so an #addOnChooser on any other step
+   is never affected. Every option is shown; eligible ones get is-active
+   (green border), the rest stay plain white pills. There's no display
+   default here — updateAddOnChooser sets display:flex or display:none on
+   every render (flex only for Learn & Level-up with at least one eligible
+   add-on). */
 #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser {
 /*   display: none; */
   flex: 1 1 auto !important;
@@ -450,7 +440,7 @@
       margin-right: 24px !important;
   width: auto !important;
   border-spacing: 0 !important;
-    padding: 0px 16px 24px 16x !important; /*  8px 16px 8px 16px !important;  top right bottom left*/
+    padding: 0px 16px 24px 16px !important; /*  8px 16px 8px 16px !important;  top right bottom left*/
     background-color: rgba(0, 0, 0, 0.03);
     border-bottom-left-radius: 8px !important;
     border-bottom-right-radius: 8px !important; 

@@ -1,9 +1,7 @@
 (function () {
   if (!pendo.designerEnabled) {
 
-  // Centralized ids — this step belongs to the same guide as mainWindow
-  // (its outer pendo-base-/pendo-g- wrapper ids match mainWindow.js's
-  // THIS_GUIDE_ID), but every id below is specific to this step's own DOM.
+  // Centralized ids — every id below is specific to this step's own DOM.
   // These are all stable *block-level* ids (confirmed unchanged across
   // several re-renders) — as opposed to the leaf ids inside rich-text
   // content like the NEXT UP paragraph's bold/span pair, which Pendo
@@ -18,8 +16,7 @@
   const DURATION_TEXT_ID = 'pendo-text-654f055c';
   const WATCH_NOW_BUTTON_ID = 'pendo-button-971f7bf5';
   const GUIDE_CONTAINER_ID = 'pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So';
-  // Pasted directly into a code block from minimizedVersion.html — same
-  // table, same id, as mainWindow.html's own addOnChooser.
+  // Pasted directly into a code block from minimizedVersion.html.
   const ADD_ON_CHOOSER_ID = 'addOnChooser';
 
   const WELCOME_VIDEO_GUIDE_ID = '5ZS3fuPEsKYHuc21OxjI_BzWty8';
@@ -29,11 +26,9 @@
   const SHARE_GUIDE_ID = 'N3OfqlLRdFoQeKiihDm6tsN7fi0';
   const CURATE_CUSTOMIZE_GUIDE_ID = '71o_-o9o6PQTvyulcbtlF3bFZxw';
 
-  // Copied verbatim from mainWindow.js's own addOnGuideMap — same add-on
-  // guides, same segment-eligibility check (segmentedGuideId), same launch
-  // targets (launchGuideId). Kept as a straight port rather than a shared
-  // reference since the two files are independent Pendo resources with no
-  // way to import between them.
+  // Add-on guides, keyed by their addOnChooser cell class: segmentedGuideId
+  // is the segment-eligibility check (the visitor is eligible once that
+  // guide exists for them), launchGuideId is what clicking the cell opens.
   const addOnGuideMap = {
     opt1: { segmentedGuideId: 'nuujFMauc8MWfTXgD81yyVPORIk', launchGuideId: '9kNzPPHZtTmnd99fqLXB4fHRznw' }, // ai & nlg
     opt2: { segmentedGuideId: 'C2GOumslcEt_jWoSzQV33ouPREY', launchGuideId: '0zUf-u9Vt4sWKIsbillGl5yZBYU' }, // analytics scripting
@@ -330,10 +325,8 @@
     return titleEl ? titleEl.textContent.trim() : '';
   }
 
-  // Same lock-icon-overlay markup mainWindow.js uses for its own locked
-  // module — reused verbatim so the two steps show a consistent lock
-  // treatment, just sized differently in CSS for this step's much smaller
-  // compact list item.
+  // Lock icon laid over a locked module's list item; sized in CSS to fit
+  // this step's compact list item.
   function addLockOverlay(li) {
             console.log('add lock overlay');
     if (li.querySelector('.pmj-lock-overlay')) return;
@@ -356,8 +349,7 @@
   // The Qlik Experience module never disappears from the checklist — there's
   // no separate "unlocked" guide to swap it for, just this one. While
   // hydration hasn't resolved complete, overlay a lock icon on top of its
-  // <li> instead (same technique mainWindow.js uses); remove it once
-  // unlocked.
+  // <li> instead; remove it once unlocked.
   function updateQlikExperienceLockState(list) {
       console.log('update Qlik experience lock state');
     if (!hydrationResolved) return;
@@ -446,8 +438,7 @@
   // Clicking a step (its icon or its label — both are inside the same <li>)
   // should update NEXT UP to that module instead of Pendo's default
   // behavior of opening the associated guide. Cloning the <li> strips
-  // whatever click handling Pendo itself bound to it/its button (the same
-  // technique mainWindow.js uses for its own list items), then our own
+  // whatever click handling Pendo itself bound to it/its button, then our own
   // listener on the clone is the only one left to run. Guarded by a data
   // attribute (itself copied onto the clone) so repeated render() calls
   // don't re-clone — and therefore re-strip listeners from — the same
@@ -537,8 +528,7 @@
   }
 
   // A visitor is only "eligible" for an add-on once its own segmented guide
-  // exists for them — same check mainWindow.js uses to decide whether its
-  // addOnChooser table shows at all.
+  // exists for them.
   function hasEligibleAddOns() {
     return Object.values(addOnGuideMap).some(config => !!pendo.findGuideById(config.segmentedGuideId));
   }
@@ -546,13 +536,13 @@
   // The addOnChooser table (pasted from minimizedVersion.html into a code
   // block) only ever shows for the Learn & Level-up module, and even then
   // only once the visitor is actually eligible for at least one add-on —
-  // otherwise it's an empty row of nothing they can act on. mainWindow.js
-  // hides this same table by setting display directly on it rather than
-  // the visibility/height class trick it uses for real Pendo rows, since a
-  // <table> doesn't collapse the same way; kept identical here for the same
-  // reason. Per-cell eligibility (is-active) is recomputed every render
-  // since add-on eligibility can change without a full page reload (e.g.
-  // right after finishing the survey that grants it).
+  // otherwise it's an empty row of nothing they can act on. Hidden by
+  // setting display directly on the table, since a <table> doesn't
+  // collapse the way a Pendo row does. When shown, every option stays
+  // visible; only eligible ones get is-active (a green border in CSS).
+  // Per-cell eligibility is recomputed every render since add-on
+  // eligibility can change without a full page reload (e.g. right after
+  // finishing the survey that grants it).
   function updateAddOnChooser(guideId) {
       console.log('update add on chooser');
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
@@ -566,13 +556,11 @@
     });
   }
 
-  // Same click behavior as mainWindow.js's own addOnChooser: clicking any
-  // cell launches its guide, regardless of that cell's is-active state —
-  // mainWindow.js doesn't gate the click itself on eligibility (only the
-  // highlighting and the table's own overall visibility above are gated),
-  // so this doesn't either, to stay a faithful port rather than introduce
-  // new behavior. Bound once via event delegation on the table itself,
-  // since Pendo can rebuild the table's contents across renders.
+  // Clicking any cell launches its guide, regardless of that cell's
+  // is-active state — only the highlighting and the table's own overall
+  // visibility above are gated on eligibility, not the click. Bound once
+  // via event delegation on the table itself, since Pendo can rebuild the
+  // table's contents across renders.
   function bindAddOnChooserClick() {
       console.log('bind addon Chooser Click');
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
