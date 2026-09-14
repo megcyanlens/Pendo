@@ -287,14 +287,11 @@ console.log('run pendo function');
 
   const T = TRANSLATIONS[getLocale()] || TRANSLATIONS.en;
 
-  // Pendo re-runs this whole script every time it shows this step, but the
-  // previous run's observer, in-flight hydration fetch and click handlers
-  // stay alive. Two runs rendering the same DOM fight each other: each
-  // one's render trips the other's observer, and each keeps its own
-  // selectedGuideId, so a step click from one run is immediately reverted
-  // by the other — the checklist looks unclickable. Each run claims
-  // ownership here; anything left over from an older run checks
-  // isStaleRun() and does nothing.
+  // Pendo re-runs this whole script every time it shows this step (e.g.
+  // after any of its buttons is clicked), but the previous run's observer,
+  // in-flight hydration fetch and click handlers stay alive. Each run
+  // claims ownership here; anything left over from an older run checks
+  // isStaleRun() and stops instead of fighting the newer run over the DOM.
   const RUN_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   window.__pmjFirstStepRunId = RUN_ID;
   console.log('firstStep script run', RUN_ID);
@@ -303,17 +300,57 @@ console.log('run pendo function');
     return window.__pmjFirstStepRunId !== RUN_ID;
   }
 
-  let hydrationResolved = false;
-  let hydrationComplete = false;
+  // ---------- Hydration status ----------
+  // A tenant can't un-hydrate, so once the API reports "synced" it's saved
+  // in localStorage (keyed by visitor, so another user on the same browser
+  // and tenant still gets their own check) and never fetched again. Until
+  // then it's fetched only when this script starts and when the visitor
+  // clicks Refresh — never on any other click.
+  function getVisitorId() {
+    try {
+      return pendo.getVisitorId() || pendo.getSerializedMetadata().visitor.id || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  const VISITOR_ID = getVisitorId();
+  const HYDRATION_STORAGE_KEY = 'pmjHydrationComplete:' + VISITOR_ID;
+
+  function readStoredHydration() {
+    if (!VISITOR_ID) return false;
+    try {
+      return localStorage.getItem(HYDRATION_STORAGE_KEY) === '1';
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function storeHydrationComplete() {
+    if (!VISITOR_ID) return;
+    try {
+      localStorage.setItem(HYDRATION_STORAGE_KEY, '1');
+    } catch (err) {
+      // Storage unavailable — the next script run just checks again.
+    }
+  }
+
+  let hydrationComplete = readStoredHydration();
+  let hydrationResolved = hydrationComplete;
   let hydrationFetchInFlight = false;
+
+  // ---------- Per-run state ----------
   // Set once the visitor clicks a step; overrides the auto-computed "next
-  // incomplete step" for what NEXT UP displays, and persists across
-  // re-renders until they click a different step.
+  // incomplete step" for what NEXT UP displays, until they click a
+  // different step.
   let selectedGuideId = null;
-  // Whichever guide id NEXT UP/Duration currently display — read by the
-  // action button's click handler at click-time, since the handler itself
-  // is bound only once.
+  // The first incomplete step, computed in applyProgress.
+  let activeGuideId = null;
+  // Whichever guide id NEXT UP/Duration currently display.
   let currentDisplayGuideId = null;
+  // Whether the visitor is eligible for at least one add-on, computed in
+  // applyAddOnEligibility.
+  let addOnsEligible = false;
 
   function isStepCompleted(li) {
                    console.log('isStepCompleted');
@@ -322,6 +359,10 @@ console.log('run pendo function');
     const svg = circleWrap.querySelector('svg');
     if (!svg) return false;
     return !!svg.querySelector('polyline');
+  }
+
+  function getVisibleItems(list) {
+    return [...list.querySelectorAll('li')].filter(li => !li.classList.contains('pmj-hidden-step'));
   }
 
   // There's only one guide for "The Qlik Experience" — QLIK_EXPERIENCE_GUIDE_ID,
@@ -341,6 +382,8 @@ console.log('run pendo function');
     const titleEl = li ? li.querySelector('[id^="pendo-text-045b0675-"]') : null;
     return titleEl ? titleEl.textContent.trim() : '';
   }
+
+  // ---------- Lock overlay (setup + hydration result only) ----------
 
   // Lock icon laid over a locked module's list item; sized in CSS to fit
   // this step's compact list item.
@@ -380,6 +423,8 @@ console.log('run pendo function');
     }
   }
 
+  // ---------- Completion + progress (setup only) ----------
+
   function rebuildConnectors(list, items) {
              console.log('rebuildConnectors');
 
@@ -392,12 +437,107 @@ console.log('run pendo function');
       // turn green if EITHER of them is completed, not just the one
       // before it — otherwise the line leading into a completed step
       // (when the step before it isn't itself done) stays gray.
-      if (isStepCompleted(li) || isStepCompleted(items[i + 1])) {
+      if (li.classList.contains('pmj-completed') || items[i + 1].classList.contains('pmj-completed')) {
         connector.classList.add('pmj-connector-completed');
       }
       li.after(connector);
     });
   }
+
+  // Completion only changes when a module guide is finished, and Pendo
+  // re-shows this step (re-running this script) when that happens — so
+  // this runs once per setup, never on a step click.
+  function applyProgress(list) {
+      console.log('apply progress');
+    const items = getVisibleItems(list);
+
+    let completedCount = 0;
+    let activeIndex = -1;
+    items.forEach((li, i) => {
+      const completed = isStepCompleted(li);
+      li.classList.toggle('pmj-completed', completed);
+      if (completed) {
+        completedCount++;
+      } else if (activeIndex === -1) {
+        activeIndex = i;
+      }
+    });
+    if (activeIndex === -1) activeIndex = items.length - 1;
+
+    items.forEach((li, i) => {
+      const isActive = i === activeIndex;
+      li.classList.toggle('pmj-active', isActive);
+      const circle = li.querySelector('.pendo-task-list-progress-circle');
+      if (circle) circle.classList.toggle('pmj-active-circle', isActive);
+    });
+
+    rebuildConnectors(list, items);
+
+    const percent = items.length ? Math.round((completedCount / items.length) * 100) : 0;
+    const fillEl = document.getElementById(PROGRESS_FILL_ID);
+    const textEl = document.getElementById(PROGRESS_TEXT_ID);
+    if (fillEl) fillEl.style.setProperty('width', percent + '%', 'important');
+    if (textEl) textEl.textContent = percent + '%';
+
+    const activeLi = items[activeIndex];
+    activeGuideId = activeLi ? activeLi.getAttribute('data-pendo-show-guide-id') : null;
+  }
+
+  // ---------- Add-on chooser ----------
+
+  // A visitor is only "eligible" for an add-on once its own segmented guide
+  // exists for them. Computed once per setup; finishing the survey that
+  // grants eligibility re-shows this step, which re-runs this script.
+  // Every option stays visible; only eligible ones get is-active (a green
+  // border in CSS).
+  function applyAddOnEligibility() {
+      console.log('apply add on eligibility');
+    addOnsEligible = false;
+    const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
+    Object.entries(addOnGuideMap).forEach(([cls, config]) => {
+      const eligible = !!pendo.findGuideById(config.segmentedGuideId);
+      if (eligible) addOnsEligible = true;
+      if (chooser) chooser.querySelector(`.${cls}`)?.classList.toggle('is-active', eligible);
+    });
+  }
+
+  // The addOnChooser table (pasted from minimizedVersion.html into a code
+  // block) only ever shows for the Learn & Level-up module, and even then
+  // only once the visitor is actually eligible for at least one add-on —
+  // otherwise it's an empty row of nothing they can act on. Hidden by
+  // setting display directly on the table, since a <table> doesn't
+  // collapse the way a Pendo row does. Just a display toggle — safe to run
+  // on every step click.
+  function updateAddOnChooser(guideId) {
+      console.log('update add on chooser');
+    const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
+    if (!chooser) return;
+    const shouldShow = guideId === LEARN_LEVEL_UP_GUIDE_ID && addOnsEligible;
+    chooser.style.setProperty('display', shouldShow ? 'flex' : 'none', 'important');
+  }
+
+  // Clicking any cell launches its guide, regardless of that cell's
+  // is-active state — only the highlighting and the table's own overall
+  // visibility above are gated on eligibility, not the click. Bound once
+  // per run via event delegation on the table itself.
+  function bindAddOnChooserClick() {
+      console.log('bind addon Chooser Click');
+    const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
+    if (!chooser || chooser.dataset.pmjClickBound === RUN_ID) return;
+    chooser.dataset.pmjClickBound = RUN_ID;
+    chooser.addEventListener('click', function (e) {
+      if (isStaleRun()) return;
+      const option = e.target.closest('.guide-image');
+      if (!option) return;
+      const cls = [...option.classList].find(c => addOnGuideMap[c]);
+      if (!cls) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendo.showGuideById(addOnGuideMap[cls].launchGuideId);
+    });
+  }
+
+  // ---------- NEXT UP (the only thing a step click updates) ----------
 
   // The NEXT UP paragraph's bold lead-in and description are a rich-text
   // block — Pendo re-parses it into fresh DOM nodes (with fresh ids) on
@@ -434,7 +574,7 @@ console.log('run pendo function');
   // The action button's label changes per module: the video gets "Watch
   // now", the survey gets "Take survey", everything else gets "Start
   // module" — except while the Qlik Experience module is still locked,
-  // when it becomes the "Refresh" control instead (see bindWatchNowClick).
+  // when it becomes the "Refresh" control instead (see bindActionButtonCapture).
   function updateActionButton(guideId) {
       console.log('updateActionButton');
     const btn = document.getElementById(WATCH_NOW_BUTTON_ID);
@@ -452,19 +592,28 @@ console.log('run pendo function');
     }
   }
 
+  function updateSelection() {
+      console.log('update selection');
+    currentDisplayGuideId = selectedGuideId || activeGuideId;
+    updateNextUp(currentDisplayGuideId);
+    updateDuration(currentDisplayGuideId);
+    updateActionButton(currentDisplayGuideId);
+    updateAddOnChooser(currentDisplayGuideId);
+  }
+
+  // ---------- Click handlers ----------
+
   // Clicking a step (its icon or its label — both are inside the same <li>)
   // should update NEXT UP to that module instead of Pendo's default
   // behavior of opening the associated guide. Cloning the <li> strips
   // whatever click handling Pendo itself bound to it/its button, then our own
-  // listener on the clone is the only one left to run. Guarded by a data
-  // attribute (itself copied onto the clone) so repeated render() calls
-  // don't re-clone — and therefore re-strip listeners from — the same
-  // node over and over.
+  // listener on the clone is the only one left to run. The data attribute
+  // (copied onto the clone) holds the RUN_ID that bound it, so a newer run
+  // re-clones — dropping the older run's listener — but the same run never
+  // re-clones its own.
   function bindStepClickHandlers(list) {
       console.log('bind step click handler');
     list.querySelectorAll('li').forEach(li => {
-      // Compared against RUN_ID (not just "is set") so a <li> bound by an
-      // older run gets re-cloned, dropping that run's listener.
       if (li.dataset.pmjClickBound === RUN_ID) return;
       const guideId = li.getAttribute('data-pendo-show-guide-id');
       const newLi = li.cloneNode(true);
@@ -474,64 +623,24 @@ console.log('run pendo function');
         e.preventDefault();
         e.stopPropagation();
         selectedGuideId = guideId;
-        renderProtected();
+        withObserverPaused(updateSelection);
       });
     });
   }
 
-  function refreshState(list) {
-      console.log('refresh state');
-    const items = [...list.querySelectorAll('li')].filter(li => !li.classList.contains('pmj-hidden-step'));
-
-    let completedCount = 0;
-    let activeIndex = -1;
-    items.forEach((li, i) => {
-      const completed = isStepCompleted(li);
-      li.classList.toggle('pmj-completed', completed);
-      if (completed) {
-        completedCount++;
-      } else if (activeIndex === -1) {
-        activeIndex = i;
-      }
-    });
-    if (activeIndex === -1) activeIndex = items.length - 1;
-
-    items.forEach((li, i) => {
-      const isActive = i === activeIndex;
-      li.classList.toggle('pmj-active', isActive);
-      const circle = li.querySelector('.pendo-task-list-progress-circle');
-      if (circle) circle.classList.toggle('pmj-active-circle', isActive);
-    });
-
-    rebuildConnectors(list, items);
-
-    const percent = items.length ? Math.round((completedCount / items.length) * 100) : 0;
-    const fillEl = document.getElementById(PROGRESS_FILL_ID);
-    const textEl = document.getElementById(PROGRESS_TEXT_ID);
-    if (fillEl) fillEl.style.setProperty('width', percent + '%', 'important');
-    if (textEl) textEl.textContent = percent + '%';
-
-    const activeLi = items[activeIndex];
-    const activeGuideId = activeLi ? activeLi.getAttribute('data-pendo-show-guide-id') : null;
-    currentDisplayGuideId = selectedGuideId || activeGuideId;
-    window.__pmjFirstStepDisplayGuideId = currentDisplayGuideId;
-    updateNextUp(currentDisplayGuideId);
-    updateDuration(currentDisplayGuideId);
-    updateActionButton(currentDisplayGuideId);
-    updateAddOnChooser(currentDisplayGuideId);
-  }
-
-  // Unlocked: the action button launches whichever module NEXT UP shows.
-  // The locked (Refresh) case never reaches this listener — see
-  // bindRefreshClick.
+  // Unlocked: the action button launches the module NEXT UP showed when it
+  // was clicked. The locked (Refresh) case never reaches this listener —
+  // see bindActionButtonCapture.
   //
   // Deliberately NOT gated on isStaleRun(): Pendo's own action on this
   // button runs first and can re-show the guide, re-running this script
   // synchronously — making this very run stale in the middle of the click
-  // it's handling, before this listener gets its turn. So it's bound only
-  // once per button element (not once per run, which would launch twice),
-  // and reads the guide id from the window, where only the run that last
-  // rendered NEXT UP writes it — i.e. what the visitor actually saw.
+  // it's handling, before this listener gets its turn. That new run's
+  // setup has also already reset NEXT UP by then, so the guide id can't be
+  // read from any run's current state; it's read from the window, where
+  // bindActionButtonCapture recorded it before Pendo's action ran. Bound
+  // only once per button element (not once per run, which would launch
+  // twice).
   function bindWatchNowClick() {
       console.log('bind watch now click');
     const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
@@ -539,95 +648,45 @@ console.log('run pendo function');
     watchNowButton.dataset.pmjClickBound = '1';
     watchNowButton.addEventListener('click', function (e) {
       e.preventDefault();
-      const guideId = window.__pmjFirstStepDisplayGuideId;
+      const guideId = window.__pmjFirstStepLaunchGuideId;
       if (guideId) pendo.showGuideById(guideId);
     });
   }
 
-  // While NEXT UP is showing the still-locked Qlik Experience module, the
-  // action button re-runs the hydration check instead of launching a guide;
-  // fetchHydrationStatus's own re-render afterward picks up whatever it
-  // resolved to (back to translated Watch Now/Start module copy, plus the
-  // unlocked module's own description, if it's now synced — otherwise
-  // still the Refresh control).
-  //
-  // It's a real Pendo button, so the action authored on it in the designer
-  // (bound by Pendo before this script runs) fires on every click too —
-  // preventDefault() doesn't stop it. As Refresh, that action re-shows the
-  // guide mid-refresh, which re-renders the step and re-runs this script.
   // A capture-phase listener on document runs before any listener on the
-  // button itself, so stopPropagation() here keeps the click from ever
-  // reaching Pendo's. Unlocked clicks pass straight through untouched.
-  // Bound on document, once per run; older runs' listeners bail out via
-  // isStaleRun().
-  function bindRefreshClick() {
+  // action button itself — including the action Pendo binds to it from the
+  // designer, which fires on every click (preventDefault() doesn't stop it)
+  // and re-shows the guide. So this is the one place that still sees the
+  // state the visitor actually clicked on. Bound on document, once per run;
+  // older runs' listeners bail out via isStaleRun().
+  //
+  // Unlocked: records which module to launch for bindWatchNowClick, then
+  // lets the click through untouched.
+  //
+  // Locked (NEXT UP is showing the still-locked Qlik Experience module):
+  // the button is the Refresh control, so re-run the hydration check
+  // instead, and stopPropagation() keeps the click from ever reaching
+  // Pendo's action.
+  function bindActionButtonCapture() {
     document.addEventListener('click', function (e) {
       if (isStaleRun()) return;
       const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
       if (!watchNowButton || !watchNowButton.contains(e.target)) return;
-      if (!isQlikExperienceLocked(currentDisplayGuideId)) return;
+      if (!isQlikExperienceLocked(currentDisplayGuideId)) {
+        window.__pmjFirstStepLaunchGuideId = currentDisplayGuideId;
+        return;
+      }
       console.log('refresh click intercepted', RUN_ID);
       e.preventDefault();
       e.stopPropagation();
       if (hydrationFetchInFlight) return;
-      // Sets hydrationFetchInFlight first, so updateActionButton (run by
-      // the observer re-render this text change triggers) keeps showing
-      // "Refreshing…" instead of flipping straight back to "Refresh".
       fetchHydrationStatus();
-      watchNowButton.textContent = T.buttons.refreshing;
+      // hydrationFetchInFlight is now set, so this shows "Refreshing…".
+      withObserverPaused(updateActionButton.bind(null, currentDisplayGuideId));
     }, true);
   }
 
-  // A visitor is only "eligible" for an add-on once its own segmented guide
-  // exists for them.
-  function hasEligibleAddOns() {
-    return Object.values(addOnGuideMap).some(config => !!pendo.findGuideById(config.segmentedGuideId));
-  }
-
-  // The addOnChooser table (pasted from minimizedVersion.html into a code
-  // block) only ever shows for the Learn & Level-up module, and even then
-  // only once the visitor is actually eligible for at least one add-on —
-  // otherwise it's an empty row of nothing they can act on. Hidden by
-  // setting display directly on the table, since a <table> doesn't
-  // collapse the way a Pendo row does. When shown, every option stays
-  // visible; only eligible ones get is-active (a green border in CSS).
-  // Per-cell eligibility is recomputed every render since add-on
-  // eligibility can change without a full page reload (e.g. right after
-  // finishing the survey that grants it).
-  function updateAddOnChooser(guideId) {
-      console.log('update add on chooser');
-    const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
-    if (!chooser) return;
-    const shouldShow = guideId === LEARN_LEVEL_UP_GUIDE_ID && hasEligibleAddOns();
-    chooser.style.setProperty('display', shouldShow ? 'flex' : 'none', 'important');
-    if (!shouldShow) return;
-    Object.entries(addOnGuideMap).forEach(([cls, config]) => {
-      const segmentedGuide = pendo.findGuideById(config.segmentedGuideId);
-      chooser.querySelector(`.${cls}`)?.classList.toggle('is-active', !!segmentedGuide);
-    });
-  }
-
-  // Clicking any cell launches its guide, regardless of that cell's
-  // is-active state — only the highlighting and the table's own overall
-  // visibility above are gated on eligibility, not the click. Bound once
-  // via event delegation on the table itself, since Pendo can rebuild the
-  // table's contents across renders.
-  function bindAddOnChooserClick() {
-      console.log('bind addon Chooser Click');
-    const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
-    if (!chooser || chooser.dataset.pmjClickBound === RUN_ID) return;
-    chooser.dataset.pmjClickBound = RUN_ID;
-    chooser.addEventListener('click', function (e) {
-      if (isStaleRun()) return;
-      const option = e.target.closest('.guide-image');
-      if (!option) return;
-      const cls = [...option.classList].find(c => addOnGuideMap[c]);
-      if (!cls) return;
-      e.preventDefault();
-      e.stopPropagation();
-      pendo.showGuideById(addOnGuideMap[cls].launchGuideId);
-    });
-  }
+  // ---------- Layout (setup only) ----------
 
   // Duration/Watch-now were authored as their own separate row below NEXT
   // UP; move them into NEXT UP's own flex row so both live in the same
@@ -663,15 +722,15 @@ console.log('run pendo function');
   }
 
   // The Pendo <hr> divider between the checklist and NEXT UP was deleted in
-  // the designer, so insert our own in the same spot instead of depending
-  // on an element that may no longer exist. Any previous one is removed
-  // first and a fresh one re-inserted right before the NEXT UP row, so this
-  // stays correct even after Pendo rebuilds the surrounding DOM.
+  // the designer, so insert our own right before the NEXT UP row. Left
+  // alone if it's already there; otherwise any stray one is removed and a
+  // fresh one inserted, so this stays correct after Pendo rebuilds the DOM.
   function ensureDivider() {
     const container = document.getElementById(GUIDE_CONTAINER_ID);
     const nextUpRow = document.getElementById(NEXT_UP_ROW_ID);
     if (!container || !nextUpRow) return;
-    container.querySelectorAll(':scope > .pmj-divider').forEach(d => d.remove());
+    if (nextUpRow.previousElementSibling?.classList.contains('pmj-divider')) return;
+    container.querySelectorAll('.pmj-divider').forEach(d => d.remove());
     const divider = document.createElement('hr');
     divider.className = 'pmj-divider';
     nextUpRow.before(divider);
@@ -684,24 +743,53 @@ console.log('run pendo function');
     if (stepContainer) stepContainer.style.setProperty('height', 'auto', 'important');
   }
 
-  function render() {
-      console.log('render');
+  // Everything this script does to Pendo's DOM, in one pass. Runs when the
+  // script starts, and again only if Pendo rebuilds the step and wipes it
+  // (see isLayoutIntact) — never on a step click.
+  function setup() {
+      console.log('setup');
     const list = document.getElementById(LIST_ID);
     if (!list) return;
-    // Must run before updateQlikExperienceLockState/refreshState below,
-    // since it replaces each <li> with a clone — everything after this
-    // re-queries the list fresh, so it naturally picks up the clones.
+    // Must run before everything below, since it replaces each <li> with a
+    // clone — everything after this re-queries the list fresh.
     bindStepClickHandlers(list);
     updateQlikExperienceLockState(list);
-    refreshState(list);
+    applyProgress(list);
+    applyAddOnEligibility();
     relocateNextUpControls();
     markNextUpFlexRoles();
     ensureDivider();
     bindWatchNowClick();
     bindAddOnChooserClick();
     fixStepContainerHeight();
+    updateSelection();
   }
 
+  // True while everything setup() did is still in place. A Pendo rebuild
+  // (observed on window resize) re-creates the step from its authored
+  // template, so the fresh <li>s lose their click binding and the divider,
+  // connectors and relocated Duration/button are gone — any one of those
+  // missing means setup() needs to run again. Our own text updates (NEXT
+  // UP, button label) also trip the observer, but leave all of these
+  // intact, so they cost nothing more than this check.
+  function isLayoutIntact() {
+    const list = document.getElementById(LIST_ID);
+    if (!list) return true;
+    const items = [...list.querySelectorAll('li')];
+    if (items.some(li => li.dataset.pmjClickBound !== RUN_ID)) return false;
+    if (items.length > 1 && !list.querySelector('.pmj-connector')) return false;
+    const nextUpRow = document.getElementById(NEXT_UP_ROW_ID);
+    if (nextUpRow && !nextUpRow.previousElementSibling?.classList.contains('pmj-divider')) return false;
+    const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
+    if (watchNowButton && !watchNowButton.closest('.pmj-nextup-right')) return false;
+    return true;
+  }
+
+  // ---------- Hydration fetch ----------
+
+  // Called only when this script starts (if not already stored as complete)
+  // and from bindActionButtonCapture. Afterwards only the lock overlay and NEXT UP
+  // are updated — nothing else depends on hydration.
   function fetchHydrationStatus() {
       console.log('fetch hydration status');
     hydrationFetchInFlight = true;
@@ -713,6 +801,7 @@ console.log('run pendo function');
       .then(res => res.json())
       .then(data => {
         hydrationComplete = !!(data && data.status === 'synced');
+        if (hydrationComplete) storeHydrationComplete();
       })
       .catch(err => {
         console.error('Error fetching hydration status, defaulting hydrationComplete to false:', err);
@@ -721,47 +810,56 @@ console.log('run pendo function');
       .then(() => {
         hydrationResolved = true;
         hydrationFetchInFlight = false;
-          console.log('hydration complete! do renderProtected next'); 
-        renderProtected();
+          console.log('hydration check finished, complete =', hydrationComplete);
+        if (isStaleRun()) return;
+        withObserverPaused(() => {
+          const list = document.getElementById(LIST_ID);
+          if (list) updateQlikExperienceLockState(list);
+          updateSelection();
+        });
       });
   }
 
-  // Pendo can rebuild this step's DOM from its authored template on its own
-  // (observed on window resize) — that wipes the relocations/relabeling
-  // above since they only ran once at load. Re-run everything whenever the
-  // guide's DOM actually changes. Every call goes through renderProtected,
-  // which disconnects the observer first — render() itself mutates the DOM
-  // (relabeling, moving nodes, rebuilding connectors), and without this an
-  // observer callback's own render() would immediately re-trigger itself.
-  const observedRoot = document.getElementById(GUIDE_CONTAINER_ID)?.closest('._pendo-step-container-size') || document.body;
-  let renderScheduled = false;
+  // ---------- Observer ----------
 
-  function renderProtected() {
-          console.log('render protected');
+  // Every DOM change this script makes goes through withObserverPaused, so
+  // our own mutations don't wake the observer. What does wake it is Pendo
+  // changing the step's DOM on its own; setup() re-runs only if that
+  // actually wiped our changes.
+  const observedRoot = document.getElementById(GUIDE_CONTAINER_ID)?.closest('._pendo-step-container-size') || document.body;
+  let checkScheduled = false;
+
+  function withObserverPaused(fn) {
     observer.disconnect();
-    // A newer run owns the DOM now — stop for good (observer stays
-    // disconnected) instead of fighting it.
-    if (isStaleRun()) {
-      console.log('stale firstStep run, stopping', RUN_ID);
-      return;
-    }
-    render();
+    fn();
     observer.observe(observedRoot, { childList: true, subtree: true });
   }
 
   const observer = new MutationObserver(() => {
                          console.log('observer');
-    if (renderScheduled) return;
-    renderScheduled = true;
+    if (checkScheduled) return;
+    checkScheduled = true;
     requestAnimationFrame(() => {
-      renderScheduled = false;
-      renderProtected();
+      checkScheduled = false;
+      if (isStaleRun()) {
+        console.log('stale firstStep run, stopping', RUN_ID);
+        observer.disconnect();
+        return;
+      }
+      if (isLayoutIntact()) return;
+      console.log('layout wiped by Pendo, running setup again');
+      withObserverPaused(setup);
     });
   });
   observer.observe(observedRoot, { childList: true, subtree: true });
 
-  bindRefreshClick();
-  fetchHydrationStatus();
+  bindActionButtonCapture();
+  withObserverPaused(setup);
+  if (hydrationComplete) {
+    console.log('hydration already complete (stored), skipping fetch');
+  } else {
+    fetchHydrationStatus();
+  }
 
   }
 })();
