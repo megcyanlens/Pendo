@@ -494,18 +494,17 @@ console.log('run pendo function');
   // open, Pendo keeps re-showing this embedded guide (e.g. whenever that
   // guide advances), and step 1's layout visibly jumps on every re-show —
   // step 2's doesn't. So every launch first collapses this guide to step 2.
-  const SHRUNKEN_STEP_ID = 'step=yD8Ga0j7tP2LQWVMs4s8BrILILQ';
+  //
+  // pendo.goToStep doesn't work on this embedded guide, and
+  // pendo.onGuideAdvanced reloads the whole guide — but the minimize
+  // button's own Pendo action switches to step 2 correctly, so a launch
+  // just clicks it.
+  const MINIMIZE_BUTTON_ID = 'pendo-button-3b0ed2d6';
 
-  // Collapses to step 2 before launching, while this embedded guide is
-  // still Pendo's active guide — goToStep acts on the active guide, which
-  // becomes the launched guide once showGuideById runs.
   function launchGuide(guideId) {
-    console.log('launch guide', guideId, '— going to step', SHRUNKEN_STEP_ID, 'first');
-    try {
-      pendo.goToStep({ destinationStepId: SHRUNKEN_STEP_ID });
-    } catch (err) {
-      console.error('goToStep to the shrunken step failed:', err);
-    }
+    const minimizeButton = document.getElementById(MINIMIZE_BUTTON_ID);
+    console.log('launch guide', guideId, '— clicking minimize first:', !!minimizeButton);
+    if (minimizeButton) minimizeButton.click();
     pendo.showGuideById(guideId);
   }
 
