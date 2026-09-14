@@ -513,6 +513,7 @@
     const activeLi = items[activeIndex];
     const activeGuideId = activeLi ? activeLi.getAttribute('data-pendo-show-guide-id') : null;
     currentDisplayGuideId = selectedGuideId || activeGuideId;
+    window.__pmjFirstStepDisplayGuideId = currentDisplayGuideId;
     updateNextUp(currentDisplayGuideId);
     updateDuration(currentDisplayGuideId);
     updateActionButton(currentDisplayGuideId);
@@ -520,20 +521,25 @@
   }
 
   // Unlocked: the action button launches whichever module NEXT UP shows.
-  // Bound once per run (guarded by a data attribute) since the button
-  // itself is never moved or recreated by relocateNextUpControls — only
-  // read at click-time via currentDisplayGuideId, which refreshState keeps
-  // up to date. The locked (Refresh) case never reaches this listener —
-  // see bindRefreshClick.
+  // The locked (Refresh) case never reaches this listener — see
+  // bindRefreshClick.
+  //
+  // Deliberately NOT gated on isStaleRun(): Pendo's own action on this
+  // button runs first and can re-show the guide, re-running this script
+  // synchronously — making this very run stale in the middle of the click
+  // it's handling, before this listener gets its turn. So it's bound only
+  // once per button element (not once per run, which would launch twice),
+  // and reads the guide id from the window, where only the run that last
+  // rendered NEXT UP writes it — i.e. what the visitor actually saw.
   function bindWatchNowClick() {
       console.log('bind watch now click');
     const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
-    if (!watchNowButton || watchNowButton.dataset.pmjClickBound === RUN_ID) return;
-    watchNowButton.dataset.pmjClickBound = RUN_ID;
+    if (!watchNowButton || watchNowButton.dataset.pmjClickBound) return;
+    watchNowButton.dataset.pmjClickBound = '1';
     watchNowButton.addEventListener('click', function (e) {
-      if (isStaleRun()) return;
       e.preventDefault();
-      if (currentDisplayGuideId) pendo.showGuideById(currentDisplayGuideId);
+      const guideId = window.__pmjFirstStepDisplayGuideId;
+      if (guideId) pendo.showGuideById(guideId);
     });
   }
 
