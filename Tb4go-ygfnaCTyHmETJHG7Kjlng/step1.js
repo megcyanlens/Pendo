@@ -10,18 +10,31 @@
   const currentURL = window.location.pathname;
     const elementCardId = 'add-new-menu-item-create';
     
-var guideSeenState = pendo.findGuideById('Tb4go-ygfnaCTyHmETJHG7Kjlng').steps.map(s => s.seenState)
+  const guideId = 'Tb4go-ygfnaCTyHmETJHG7Kjlng';
+  // Step 6 of the guide (index 5). Once a visitor has been this far, landing
+  // on a sheet page skips them to the last step.
+  const checkpointStepIndex = 5;
+
+  var guideSeenState = pendo.findGuideById(guideId).steps.map(s => s.seenState)
     console.log(guideSeenState);
   // console.log("[Pendo] Current URL:", currentURL);
-    
-if (currentURL.includes(sheetPageUrl)) {
-    var guideInProgress = pendo.findGuideById('Tb4go-ygfnaCTyHmETJHG7Kjlng').isInProgress(); //isn't this always going to be true, since its the current guide
-    if (guideInProgress) {
-        pendo.goToStep({ destinationStepId: lastStepId });
-    } else {
-        // do nothing, continue with the rest of the code below
-    }
-}
+
+  // isInProgress() can't be used for this — this script only runs while the
+  // guide is showing, so it's always in progress. Each step's seenState
+  // ("active", "advanced", "dismissed", ...) is set once the visitor has seen
+  // that step, and stays set on later visits. Hidden/dynamic steps that were
+  // skipped never get one, so rather than requiring index 5 itself, any step
+  // from index 5 onward having a seenState counts as having got that far.
+  const reachedCheckpoint = guideSeenState.slice(checkpointStepIndex).some(state => !!state);
+  // console.log("[Pendo] Reached step", checkpointStepIndex + 1, ":", reachedCheckpoint);
+
+  if (currentURL.includes(sheetPageUrl) && reachedCheckpoint) {
+    pendo.goToStep({ destinationStepId: lastStepId });
+    // Stop here: the checks below would otherwise send the visitor to another
+    // step too (the Create nav item is visible on sheet pages).
+    return;
+  }
+
   if (currentURL.includes(featurePageURLSegment)) {
   //   console.log("[Pendo] URL matches feature page. Going to datamanager step:", featurePageStep);
     pendo.goToStep({destinationStepId: featurePageStepId});
