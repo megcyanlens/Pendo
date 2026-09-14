@@ -328,13 +328,22 @@
   // revealStep() un-hides it once the initial setup has run. Done with our
   // own <style> element rather than a class on Pendo's DOM, so a Pendo
   // re-render can't strip it and leave the guide stuck hidden.
+  //
+  // Only the container's *contents* are made transparent (opacity, not
+  // visibility/display), and never the guide container itself: Pendo checks
+  // that element to decide whether the guide is actually showing, and
+  // hiding it with visibility:hidden appeared to stall Pendo's guide loop,
+  // delaying every other guide's steps. Opacity leaves the step fully
+  // "visible" as far as any visibility check is concerned, keeps its layout
+  // space, and pointer-events:none keeps the invisible controls from being
+  // clicked in the meantime.
   const HIDE_STYLE_ID = 'pmj-firststep-hide-until-ready';
 
   function hideStepUntilReady() {
     if (document.getElementById(HIDE_STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = HIDE_STYLE_ID;
-    style.textContent = '#' + GUIDE_CONTAINER_ID + ' { visibility: hidden !important; }';
+    style.textContent = '#' + GUIDE_CONTAINER_ID + ' > * { opacity: 0 !important; pointer-events: none !important; }';
     document.head.appendChild(style);
   }
 
@@ -952,9 +961,12 @@
   // progress circles inside each <li>. Setting up before that pass just
   // meant setting up twice, so the initial setup waits until the step's
   // DOM has been quiet for SETUP_QUIET_MS — capped at SETUP_MAX_WAIT_MS
-  // after the script started, in case Pendo keeps touching it.
+  // after the script started, in case Pendo keeps touching it. (Pendo's
+  // pass has landed within ~90–160ms in testing, so the cap is only a
+  // safety net and is kept short: the step's contents stay invisible until
+  // then.)
   const SETUP_QUIET_MS = 50;
-  const SETUP_MAX_WAIT_MS = 1000;
+  const SETUP_MAX_WAIT_MS = 500;
   const scriptStartTime = Date.now();
   let initialSetupDone = false;
   let initialSetupTimer = null;
