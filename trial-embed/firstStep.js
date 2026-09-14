@@ -1,6 +1,6 @@
 (function () {
   if (!pendo.designerEnabled) {
-console.log('run pendo function');
+// console.log('run pendo function');
 
   // Centralized ids — every id below is specific to this step's own DOM.
   // These are all stable *block-level* ids (confirmed unchanged across
@@ -56,9 +56,10 @@ console.log('run pendo function');
   // here — they're read straight off each list item's own title text (see
   // getStepLabel below), which Pendo already translates as authored guide
   // content through its own localization pipeline. Only text this script
-  // itself injects — the NEXT UP description, the duration line, and the
-  // action button's label — needs its own translation table, since none of
-  // that exists as authored Pendo content anywhere in this step.
+  // itself injects — the NEXT UP description, the duration line, the
+  // action button's label, and the add-on chooser labels (whose code block
+  // HTML Pendo doesn't translate) — needs its own translation table, since
+  // none of that exists as authored Pendo content anywhere in this step.
   //
   // Locale is read once from pendo.getSerializedMetadata().visitor.locale
   // and matched against this list; unmatched/unknown locales fall back to
@@ -78,7 +79,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Duration: ~{n} minutes',
       buttons: { watchNow: 'Watch now →', takeSurvey: 'Take survey →', startModule: 'Start module →', refresh: 'Refresh ⟳', refreshing: 'Refreshing…' },
-      hydrationLoading: 'The resources are still being loaded. Please check back in a few minutes!'
+      hydrationLoading: 'The resources are still being loaded. Please check back in a few minutes!',
+      addOns: { opt1: 'AI & Natural Language', opt2: 'Analytics & Scripting', opt3: 'Optimization & Automation', opt4: 'Data Science & Predictions', opt5: 'Alerts & Monitoring', opt6: 'Complex Reporting', opt7: 'Integrations & APIs' }
     },
     fr: {
       descriptions: {
@@ -91,7 +93,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Durée : ~{n} minutes',
       buttons: { watchNow: 'Regarder maintenant →', takeSurvey: 'Répondre au questionnaire →', startModule: 'Démarrer le module →', refresh: 'Actualiser ⟳', refreshing: 'Actualisation…' },
-      hydrationLoading: 'Les ressources sont en cours de chargement. Merci de revenir dans quelques minutes !'
+      hydrationLoading: 'Les ressources sont en cours de chargement. Merci de revenir dans quelques minutes !',
+      addOns: { opt1: 'IA et langage naturel', opt2: 'Analytique et scripts', opt3: 'Optimisation et automatisation', opt4: 'Science des données et prédictions', opt5: 'Alertes et surveillance', opt6: 'Rapports complexes', opt7: 'Intégrations et API' }
     },
     de: {
       descriptions: {
@@ -104,7 +107,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Dauer: ~{n} Minuten',
       buttons: { watchNow: 'Jetzt ansehen →', takeSurvey: 'Umfrage starten →', startModule: 'Modul starten →', refresh: 'Aktualisieren ⟳', refreshing: 'Wird aktualisiert…' },
-      hydrationLoading: 'Die Ressourcen werden noch geladen. Bitte schauen Sie in ein paar Minuten wieder vorbei!'
+      hydrationLoading: 'Die Ressourcen werden noch geladen. Bitte schauen Sie in ein paar Minuten wieder vorbei!',
+      addOns: { opt1: 'KI und natürliche Sprache', opt2: 'Analytik und Skripterstellung', opt3: 'Optimierung und Automatisierung', opt4: 'Data Science und Prognosen', opt5: 'Warnungen und Überwachung', opt6: 'Komplexes Reporting', opt7: 'Integrationen und APIs' }
     },
     es: {
       descriptions: {
@@ -117,7 +121,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Duración: ~{n} minutos',
       buttons: { watchNow: 'Ver ahora →', takeSurvey: 'Responder encuesta →', startModule: 'Iniciar módulo →', refresh: 'Actualizar ⟳', refreshing: 'Actualizando…' },
-      hydrationLoading: 'Los recursos aún se están cargando. ¡Vuelva a comprobarlo en unos minutos!'
+      hydrationLoading: 'Los recursos aún se están cargando. ¡Vuelva a comprobarlo en unos minutos!',
+      addOns: { opt1: 'IA y lenguaje natural', opt2: 'Análisis y scripts', opt3: 'Optimización y automatización', opt4: 'Ciencia de datos y predicciones', opt5: 'Alertas y supervisión', opt6: 'Informes complejos', opt7: 'Integraciones y API' }
     },
     it: {
       descriptions: {
@@ -130,7 +135,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Durata: ~{n} minuti',
       buttons: { watchNow: 'Guarda ora →', takeSurvey: 'Rispondi al sondaggio →', startModule: 'Avvia modulo →', refresh: 'Aggiorna ⟳', refreshing: 'Aggiornamento…' },
-      hydrationLoading: 'Le risorse sono ancora in fase di caricamento. Ricontrolla tra qualche minuto!'
+      hydrationLoading: 'Le risorse sono ancora in fase di caricamento. Ricontrolla tra qualche minuto!',
+      addOns: { opt1: 'IA e linguaggio naturale', opt2: 'Analisi e scripting', opt3: 'Ottimizzazione e automazione', opt4: 'Data science e previsioni', opt5: 'Avvisi e monitoraggio', opt6: 'Reporting complesso', opt7: 'Integrazioni e API' }
     },
     nl: {
       descriptions: {
@@ -143,7 +149,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Duur: ~{n} minuten',
       buttons: { watchNow: 'Nu bekijken →', takeSurvey: 'Enquête starten →', startModule: 'Module starten →', refresh: 'Vernieuwen ⟳', refreshing: 'Vernieuwen…' },
-      hydrationLoading: 'De resources worden nog geladen. Kijk over een paar minuten nog eens!'
+      hydrationLoading: 'De resources worden nog geladen. Kijk over een paar minuten nog eens!',
+      addOns: { opt1: 'AI en natuurlijke taal', opt2: 'Analyse en scripting', opt3: 'Optimalisatie en automatisering', opt4: 'Data science en voorspellingen', opt5: 'Waarschuwingen en monitoring', opt6: 'Complexe rapportage', opt7: "Integraties en API's" }
     },
     sv: {
       descriptions: {
@@ -156,7 +163,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Tid: ~{n} minuter',
       buttons: { watchNow: 'Titta nu →', takeSurvey: 'Svara på enkäten →', startModule: 'Starta modul →', refresh: 'Uppdatera ⟳', refreshing: 'Uppdaterar…' },
-      hydrationLoading: 'Resurserna laddas fortfarande. Kolla igen om några minuter!'
+      hydrationLoading: 'Resurserna laddas fortfarande. Kolla igen om några minuter!',
+      addOns: { opt1: 'AI och naturligt språk', opt2: 'Analys och skript', opt3: 'Optimering och automatisering', opt4: 'Datavetenskap och prognoser', opt5: 'Varningar och övervakning', opt6: 'Komplex rapportering', opt7: 'Integrationer och API:er' }
     },
     pl: {
       descriptions: {
@@ -169,7 +177,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Czas trwania: ~{n} minut',
       buttons: { watchNow: 'Obejrzyj teraz →', takeSurvey: 'Wypełnij ankietę →', startModule: 'Rozpocznij moduł →', refresh: 'Odśwież ⟳', refreshing: 'Odświeżanie…' },
-      hydrationLoading: 'Zasoby wciąż się wczytują. Sprawdź ponownie za kilka minut!'
+      hydrationLoading: 'Zasoby wciąż się wczytują. Sprawdź ponownie za kilka minut!',
+      addOns: { opt1: 'AI i język naturalny', opt2: 'Analityka i skrypty', opt3: 'Optymalizacja i automatyzacja', opt4: 'Nauka o danych i prognozy', opt5: 'Alerty i monitorowanie', opt6: 'Złożone raportowanie', opt7: 'Integracje i API' }
     },
     pt: {
       descriptions: {
@@ -182,7 +191,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Duração: ~{n} minutos',
       buttons: { watchNow: 'Assistir agora →', takeSurvey: 'Responder pesquisa →', startModule: 'Iniciar módulo →', refresh: 'Atualizar ⟳', refreshing: 'Atualizando…' },
-      hydrationLoading: 'Os recursos ainda estão sendo carregados. Volte a verificar em alguns minutos!'
+      hydrationLoading: 'Os recursos ainda estão sendo carregados. Volte a verificar em alguns minutos!',
+      addOns: { opt1: 'IA e linguagem natural', opt2: 'Análise e scripts', opt3: 'Otimização e automação', opt4: 'Ciência de dados e previsões', opt5: 'Alertas e monitoramento', opt6: 'Relatórios complexos', opt7: 'Integrações e APIs' }
     },
     ru: {
       descriptions: {
@@ -195,7 +205,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Длительность: ~{n} мин.',
       buttons: { watchNow: 'Смотреть →', takeSurvey: 'Пройти опрос →', startModule: 'Начать модуль →', refresh: 'Обновить ⟳', refreshing: 'Обновление…' },
-      hydrationLoading: 'Ресурсы ещё загружаются. Пожалуйста, проверьте снова через несколько минут!'
+      hydrationLoading: 'Ресурсы ещё загружаются. Пожалуйста, проверьте снова через несколько минут!',
+      addOns: { opt1: 'ИИ и естественный язык', opt2: 'Аналитика и скрипты', opt3: 'Оптимизация и автоматизация', opt4: 'Наука о данных и прогнозы', opt5: 'Оповещения и мониторинг', opt6: 'Сложная отчётность', opt7: 'Интеграции и API' }
     },
     tr: {
       descriptions: {
@@ -208,7 +219,8 @@ console.log('run pendo function');
       },
       durationTemplate: 'Süre: ~{n} dakika',
       buttons: { watchNow: 'Şimdi izle →', takeSurvey: 'Anketi yanıtla →', startModule: 'Modülü başlat →', refresh: 'Yenile ⟳', refreshing: 'Yenileniyor…' },
-      hydrationLoading: 'Kaynaklar hâlâ yükleniyor. Lütfen birkaç dakika sonra tekrar kontrol edin!'
+      hydrationLoading: 'Kaynaklar hâlâ yükleniyor. Lütfen birkaç dakika sonra tekrar kontrol edin!',
+      addOns: { opt1: 'Yapay zekâ ve doğal dil', opt2: 'Analiz ve betik oluşturma', opt3: 'Optimizasyon ve otomasyon', opt4: 'Veri bilimi ve tahminler', opt5: 'Uyarılar ve izleme', opt6: 'Karmaşık raporlama', opt7: "Entegrasyonlar ve API'ler" }
     },
     ja: {
       descriptions: {
@@ -221,7 +233,8 @@ console.log('run pendo function');
       },
       durationTemplate: '所要時間: ~{n} 分',
       buttons: { watchNow: '今すぐ視聴 →', takeSurvey: 'アンケートに回答 →', startModule: 'モジュールを開始 →', refresh: '再読み込み ⟳', refreshing: '再読み込み中…' },
-      hydrationLoading: 'リソースはまだ読み込み中です。数分後に再度確認してください。'
+      hydrationLoading: 'リソースはまだ読み込み中です。数分後に再度確認してください。',
+      addOns: { opt1: 'AI と自然言語', opt2: '分析とスクリプト', opt3: '最適化と自動化', opt4: 'データサイエンスと予測', opt5: 'アラートと監視', opt6: '複雑なレポート作成', opt7: '統合と API' }
     },
     ko: {
       descriptions: {
@@ -234,7 +247,8 @@ console.log('run pendo function');
       },
       durationTemplate: '소요 시간: 약 {n}분',
       buttons: { watchNow: '지금 보기 →', takeSurvey: '설문조사 참여 →', startModule: '모듈 시작 →', refresh: '새로고침 ⟳', refreshing: '새로고침 중…' },
-      hydrationLoading: '리소스를 아직 불러오는 중입니다. 몇 분 후 다시 확인해 주세요!'
+      hydrationLoading: '리소스를 아직 불러오는 중입니다. 몇 분 후 다시 확인해 주세요!',
+      addOns: { opt1: 'AI 및 자연어', opt2: '분석 및 스크립팅', opt3: '최적화 및 자동화', opt4: '데이터 과학 및 예측', opt5: '알림 및 모니터링', opt6: '복합 보고', opt7: '통합 및 API' }
     },
     'zh-CN': {
       descriptions: {
@@ -247,7 +261,8 @@ console.log('run pendo function');
       },
       durationTemplate: '时长：约 {n} 分钟',
       buttons: { watchNow: '立即观看 →', takeSurvey: '参与调查 →', startModule: '开始模块 →', refresh: '刷新 ⟳', refreshing: '正在刷新…' },
-      hydrationLoading: '资源仍在加载中，请稍后几分钟再查看！'
+      hydrationLoading: '资源仍在加载中，请稍后几分钟再查看！',
+      addOns: { opt1: 'AI 与自然语言', opt2: '分析与脚本', opt3: '优化与自动化', opt4: '数据科学与预测', opt5: '警报与监控', opt6: '复杂报告', opt7: '集成与 API' }
     },
     'zh-TW': {
       descriptions: {
@@ -260,7 +275,8 @@ console.log('run pendo function');
       },
       durationTemplate: '時長：約 {n} 分鐘',
       buttons: { watchNow: '立即觀看 →', takeSurvey: '填寫問卷 →', startModule: '開始模組 →', refresh: '重新整理 ⟳', refreshing: '重新整理中…' },
-      hydrationLoading: '資源仍在載入中，請稍後幾分鐘再查看！'
+      hydrationLoading: '資源仍在載入中，請稍後幾分鐘再查看！',
+      addOns: { opt1: 'AI 與自然語言', opt2: '分析與指令碼', opt3: '最佳化與自動化', opt4: '資料科學與預測', opt5: '警示與監控', opt6: '複雜報告', opt7: '整合與 API' }
     }
   };
 
@@ -294,10 +310,10 @@ console.log('run pendo function');
   // isStaleRun() and stops instead of fighting the newer run over the DOM.
   const RUN_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   window.__pmjFirstStepRunId = RUN_ID;
-  console.log('firstStep script run', RUN_ID);
+  // console.log('firstStep script run', RUN_ID);
   // Debug only: expand this in the console to see what made Pendo run the
   // script (e.g. whether a click handler is in the call stack).
-  console.trace('firstStep script run — call stack', RUN_ID);
+  // console.trace('firstStep script run — call stack', RUN_ID);
 
   function isStaleRun() {
     return window.__pmjFirstStepRunId !== RUN_ID;
@@ -383,7 +399,7 @@ console.log('run pendo function');
   let addOnChooserShown = null;
 
   function isStepCompleted(li) {
-                   console.log('isStepCompleted');
+                   // console.log('isStepCompleted');
     const circleWrap = li.querySelector('.pendo-task-list-progress-circle');
     if (!circleWrap) return false;
     const svg = circleWrap.querySelector('svg');
@@ -400,7 +416,7 @@ console.log('run pendo function');
   // whether that's because the very first fetch hasn't come back yet, or
   // because it came back but wasn't synced.
   function isQlikExperienceLocked(guideId) {
-             console.log('isQlikExperienceLocked');
+             // console.log('isQlikExperienceLocked');
     return guideId === QLIK_EXPERIENCE_GUIDE_ID && !hydrationComplete;
   }
 
@@ -418,7 +434,7 @@ console.log('run pendo function');
   // Lock icon laid over a locked module's list item; sized in CSS to fit
   // this step's compact list item.
   function addLockOverlay(li) {
-            console.log('add lock overlay');
+            // console.log('add lock overlay');
     if (li.querySelector('.pmj-lock-overlay')) return;
     const overlay = document.createElement('div');
     overlay.className = 'pmj-lock-overlay';
@@ -431,7 +447,7 @@ console.log('run pendo function');
   }
 
   function removeLockOverlay(li) {
-            console.log('remove overlay');
+            // console.log('remove overlay');
     const overlay = li.querySelector('.pmj-lock-overlay');
     if (overlay) overlay.remove();
   }
@@ -441,7 +457,7 @@ console.log('run pendo function');
   // hydration hasn't resolved complete, overlay a lock icon on top of its
   // <li> instead; remove it once unlocked.
   function updateQlikExperienceLockState(list) {
-      console.log('update Qlik experience lock state');
+      // console.log('update Qlik experience lock state');
     if (!hydrationResolved) return;
     const li = list.querySelector(`li[data-pendo-show-guide-id="${QLIK_EXPERIENCE_GUIDE_ID}"]`);
     if (!li) return;
@@ -456,7 +472,7 @@ console.log('run pendo function');
   // ---------- Completion + progress (setup only) ----------
 
   function rebuildConnectors(list, items) {
-             console.log('rebuildConnectors');
+             // console.log('rebuildConnectors');
 
     list.querySelectorAll('.pmj-connector').forEach(c => c.remove());
     items.forEach((li, i) => {
@@ -478,7 +494,7 @@ console.log('run pendo function');
   // re-shows this step (re-running this script) when that happens — so
   // this runs once per setup, never on a step click.
   function applyProgress(list) {
-      console.log('apply progress');
+      // console.log('apply progress');
     const items = getVisibleItems(list);
 
     let completedCount = 0;
@@ -528,7 +544,7 @@ console.log('run pendo function');
 
   function launchGuide(guideId) {
     const minimizeButton = document.getElementById(MINIMIZE_BUTTON_ID);
-    console.log('launch guide', guideId, '— clicking minimize first:', !!minimizeButton);
+    // console.log('launch guide', guideId, '— clicking minimize first:', !!minimizeButton);
     if (minimizeButton) minimizeButton.click();
     pendo.showGuideById(guideId);
   }
@@ -540,14 +556,23 @@ console.log('run pendo function');
   // grants eligibility re-shows this step, which re-runs this script.
   // Every option stays visible; only eligible ones get is-active (a green
   // border in CSS).
+  //
+  // Also sets each option's label from T.addOns — the code block's own
+  // English <p> text is only the fallback, since code block HTML isn't
+  // translated by Pendo the way authored text blocks are.
   function applyAddOnEligibility() {
-      console.log('apply add on eligibility');
+      // console.log('apply add on eligibility');
     addOnsEligible = false;
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
     Object.entries(addOnGuideMap).forEach(([cls, config]) => {
       const eligible = !!pendo.findGuideById(config.segmentedGuideId);
       if (eligible) addOnsEligible = true;
-      if (chooser) chooser.querySelector(`.${cls}`)?.classList.toggle('is-active', eligible);
+      const cell = chooser ? chooser.querySelector(`.${cls}`) : null;
+      if (!cell) return;
+      cell.classList.toggle('is-active', eligible);
+      const labelEl = cell.querySelector('p');
+      const label = T.addOns && T.addOns[cls];
+      if (labelEl && label && labelEl.textContent !== label) labelEl.textContent = label;
     });
   }
 
@@ -564,7 +589,7 @@ console.log('run pendo function');
     if (shouldShow === addOnChooserShown) return;
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
     if (!chooser) return;
-      console.log('update add on chooser', shouldShow ? 'show' : 'hide');
+      // console.log('update add on chooser', shouldShow ? 'show' : 'hide');
     chooser.style.setProperty('display', shouldShow ? 'flex' : 'none', 'important');
     addOnChooserShown = shouldShow;
   }
@@ -574,7 +599,7 @@ console.log('run pendo function');
   // visibility above are gated on eligibility, not the click. Bound once
   // per run via event delegation on the table itself.
   function bindAddOnChooserClick() {
-      console.log('bind addon Chooser Click');
+      // console.log('bind addon Chooser Click');
     const chooser = document.getElementById(ADD_ON_CHOOSER_ID);
     if (!chooser || chooser.dataset.pmjClickBound === RUN_ID) return;
     chooser.dataset.pmjClickBound = RUN_ID;
@@ -650,7 +675,7 @@ console.log('run pendo function');
   }
 
   function updateSelection() {
-          console.log('update selection');
+          // console.log('update selection');
     currentDisplayGuideId = selectedGuideId || activeGuideId;
     const locked = isQlikExperienceLocked(currentDisplayGuideId);
     updateNextUp(currentDisplayGuideId, locked);
@@ -670,7 +695,7 @@ console.log('run pendo function');
   // re-clones — dropping the older run's listener — but the same run never
   // re-clones its own.
   function bindStepClickHandlers(list) {
-      console.log('bind step click handler');
+      // console.log('bind step click handler');
     list.querySelectorAll('li').forEach(li => {
       if (li.dataset.pmjClickBound === RUN_ID) return;
       const guideId = li.getAttribute('data-pendo-show-guide-id');
@@ -700,7 +725,7 @@ console.log('run pendo function');
   // only once per button element (not once per run, which would launch
   // twice).
   function bindWatchNowClick() {
-      console.log('bind watch now click');
+      // console.log('bind watch now click');
     const watchNowButton = document.getElementById(WATCH_NOW_BUTTON_ID);
     if (!watchNowButton || watchNowButton.dataset.pmjClickBound) return;
     watchNowButton.dataset.pmjClickBound = '1';
@@ -734,7 +759,7 @@ console.log('run pendo function');
         window.__pmjFirstStepLaunchGuideId = currentDisplayGuideId;
         return;
       }
-      console.log('refresh click intercepted', RUN_ID);
+      // console.log('refresh click intercepted', RUN_ID);
       e.preventDefault();
       e.stopPropagation();
       if (hydrationFetchInFlight) return;
@@ -805,7 +830,7 @@ console.log('run pendo function');
   // script starts, and again only if Pendo rebuilds the step and wipes it
   // (see isLayoutIntact) — never on a step click.
   function setup() {
-      console.log('setup');
+      // console.log('setup');
     const list = document.getElementById(LIST_ID);
     if (!list) return;
     // Must run before everything below, since it replaces each <li> with a
@@ -863,7 +888,7 @@ console.log('run pendo function');
   // and from bindActionButtonCapture. Afterwards only the lock overlay and NEXT UP
   // are updated — nothing else depends on hydration.
   function fetchHydrationStatus() {
-      console.log('fetch hydration status');
+      // console.log('fetch hydration status');
     const wasResolved = hydrationResolved;
     const wasComplete = hydrationComplete;
     hydrationFetchInFlight = true;
@@ -884,7 +909,7 @@ console.log('run pendo function');
       .then(() => {
         hydrationResolved = true;
         hydrationFetchInFlight = false;
-          console.log('hydration check finished, complete =', hydrationComplete);
+          // console.log('hydration check finished, complete =', hydrationComplete);
         // Before the initial setup there's nothing to update yet — setup()
         // applies the lock state itself once it runs.
         if (isStaleRun() || !initialSetupDone) return;
@@ -945,7 +970,7 @@ console.log('run pendo function');
     initialSetupDone = true;
     const mutations = pendingMutations;
     pendingMutations = [];
-    console.log('initial setup', RUN_ID, '—', Date.now() - scriptStartTime, 'ms after script start — Pendo mutations while waiting (' + mutations.length + '):', mutations.slice(0, 15));
+    // console.log('initial setup', RUN_ID, '—', Date.now() - scriptStartTime, 'ms after script start — Pendo mutations while waiting (' + mutations.length + '):', mutations.slice(0, 15));
     try {
       withObserverPaused(setup);
     } finally {
@@ -956,8 +981,10 @@ console.log('run pendo function');
   }
 
   const observer = new MutationObserver(records => {
-                         console.log('observer');
-    records.forEach(m => pendingMutations.push(describeMutation(m)));
+                         // console.log('observer');
+    // Debug only — feeds the (commented-out) observer/initial-setup logs.
+    // Uncomment together with those logs.
+    // records.forEach(m => pendingMutations.push(describeMutation(m)));
     if (!initialSetupDone) {
       scheduleInitialSetup();
       return;
@@ -969,14 +996,14 @@ console.log('run pendo function');
       const mutations = pendingMutations;
       pendingMutations = [];
       if (isStaleRun()) {
-        console.log('stale firstStep run, stopping', RUN_ID);
+        // console.log('stale firstStep run, stopping', RUN_ID);
         observer.disconnect();
         return;
       }
       const problem = getLayoutProblem();
-      console.log('observer check', RUN_ID, '— problem:', problem || 'none', '— mutations (' + mutations.length + '):', mutations.slice(0, 15));
+      // console.log('observer check', RUN_ID, '— problem:', problem || 'none', '— mutations (' + mutations.length + '):', mutations.slice(0, 15));
       if (!problem) return;
-      console.log('layout wiped by Pendo, running setup again');
+      // console.log('layout wiped by Pendo, running setup again');
       withObserverPaused(setup);
     });
   });
@@ -985,7 +1012,7 @@ console.log('run pendo function');
   bindActionButtonCapture();
   scheduleInitialSetup();
   if (hydrationComplete) {
-    console.log('hydration already complete (stored), skipping fetch');
+    // console.log('hydration already complete (stored), skipping fetch');
   } else {
     fetchHydrationStatus();
   }
