@@ -488,6 +488,27 @@ console.log('run pendo function');
     activeGuideId = activeLi ? activeLi.getAttribute('data-pendo-show-guide-id') : null;
   }
 
+  // ---------- Launching a guide ----------
+
+  // Step 2 (shrunkenVersion) of this same guide. While another guide is
+  // open, Pendo keeps re-showing this embedded guide (e.g. whenever that
+  // guide advances), and step 1's layout visibly jumps on every re-show —
+  // step 2's doesn't. So every launch first collapses this guide to step 2.
+  const SHRUNKEN_STEP_ID = 'step=yD8Ga0j7tP2LQWVMs4s8BrILILQ';
+
+  // Collapses to step 2 before launching, while this embedded guide is
+  // still Pendo's active guide — goToStep acts on the active guide, which
+  // becomes the launched guide once showGuideById runs.
+  function launchGuide(guideId) {
+    console.log('launch guide', guideId, '— going to step', SHRUNKEN_STEP_ID, 'first');
+    try {
+      pendo.goToStep({ destinationStepId: SHRUNKEN_STEP_ID });
+    } catch (err) {
+      console.error('goToStep to the shrunken step failed:', err);
+    }
+    pendo.showGuideById(guideId);
+  }
+
   // ---------- Add-on chooser ----------
 
   // A visitor is only "eligible" for an add-on once its own segmented guide
@@ -541,7 +562,7 @@ console.log('run pendo function');
       if (!cls) return;
       e.preventDefault();
       e.stopPropagation();
-      pendo.showGuideById(addOnGuideMap[cls].launchGuideId);
+      launchGuide(addOnGuideMap[cls].launchGuideId);
     });
   }
 
@@ -662,7 +683,7 @@ console.log('run pendo function');
     watchNowButton.addEventListener('click', function (e) {
       e.preventDefault();
       const guideId = window.__pmjFirstStepLaunchGuideId;
-      if (guideId) pendo.showGuideById(guideId);
+      if (guideId) launchGuide(guideId);
     });
   }
 
