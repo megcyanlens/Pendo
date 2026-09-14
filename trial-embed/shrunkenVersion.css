@@ -1,0 +1,212 @@
+/* shrunkenVersion — modeled on step2.css/js rather than on
+   minimizedVersion.css's approach: instead of absolute-positioning
+   Pendo's own authored elements (title row, checklist, progress bar) in
+   place — which fights its mock-flexbox layout and, for anything DOM-
+   moved, risks Pendo's own re-render reconciliation deleting it on
+   resize — this hides those authored elements entirely and rebuilds a
+   small independent widget (injected via the code block, see
+   shrunkenVersion.html) that reads its data out of them in JS. The
+   widget never depends on their layout at all, so there's nothing left
+   for a resize to break.
+
+   All ids below are specific to THIS step's own DOM. */
+
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ {
+  border-bottom: 1px solid #E3E3E3 !important;
+}
+
+/* #pendo-row-4dd80edf (title/subtitle) and #pendo-row-1d29a8da (which turns
+   out to hold nothing but the real maximize button, #pendo-button-fffba553
+   — not checklist markup) both stay visible. Only the checklist itself is
+   replaced with the bubble widget. #pendo-task-list-container is a fixed
+   id Pendo reuses on every step's checklist widget (not a per-step
+   randomized hash like the row ids), so hiding it bare hid the checklist
+   on other steps too — scope everything here to this step's own guide
+   container instead. */
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ #pendo-task-list-container,
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ #pendo-text-c149bf6c {
+  display: none !important;
+}
+
+/* This row's designer-set vertical alignment ("bottom") differs from
+   minimizedVersion's own title row ("center"), which showed up as the
+   subtitle sitting a couple pixels off between the two steps — Pendo
+   expresses that setting by absolutely positioning each mock-flexbox
+   element against a bottom/top offset scoped to the "vertical alignment"
+   choice, so two different choices land text at different pixel offsets
+   even in an identically-sized row. Neutralized the same way
+   minimizedVersion.css neutralizes it for its own title row
+   (#pendo-row-b540ef72): drop the absolute positioning entirely in favor
+   of plain inline-block flow, so both steps render this text identically
+   regardless of what the designer's alignment setting says. */
+#pendo-row-4dd80edf .pendo-mock-flexbox-row {
+  position: relative !important;
+  display: block !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  min-height: 26px !important;
+}
+#pendo-row-4dd80edf .pendo-mock-flexbox-element {
+  position: static !important;
+  display: inline-block !important;
+  vertical-align: baseline !important;
+  width: auto !important;
+}
+#pendo-row-4dd80edf .pendo-block-controls-wrapper {
+  display: inline-block !important;
+  width: auto !important;
+}
+#pendo-text-17628d9e {
+  width: auto !important;
+  max-width: none !important;
+}
+#pendo-text-d80c9ac8 {
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* The widget's own code-block row can't be moved into #pendo-row-4dd80edf's
+   DOM (Pendo's designer has no way to nest one row inside another), so to
+   land it on the same visual line as the title/subtitle, it's taken out of
+   flow entirely: :has() finds its row/mock-flexbox wrappers wherever they
+   are and collapses them to zero height (same technique already used for
+   #pendo-row-90f5fe12 in minimizedVersion.css, just found generically here
+   instead of by a hardcoded row id), then the widget itself is positioned
+   absolutely against the guide container — the same stable anchor
+   minimizedVersion.css anchors its own absolutely-positioned elements
+   against — at the title row's own height. */
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ [id^="pendo-row-"]:has(#pmj-shrunken-root) {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ .pendo-mock-flexbox-row:has(#pmj-shrunken-root),
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ .pendo-mock-flexbox-element:has(#pmj-shrunken-root) {
+  position: static !important;
+}
+
+/* Widget now only carries the bubbles + progress bar, in that order (per
+   request, bubbles sit to the left of the progress bar) — the title and
+   subtitle are Pendo's own original elements in #pendo-row-4dd80edf, left
+   alone so their formatting doesn't change. right:104px leaves room for
+   the real maximize button (#pendo-button-fffba553 below) at right:60px
+   so the two don't overlap. top:16px is a starting guess for lining up
+   with the title row's own text baseline — nudge it after seeing this
+   live. */
+.pmj-shrunken {
+  position: absolute !important;
+  top: 16px !important;
+  right: 104px !important;
+  z-index: 5 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: auto !important;
+  font-family: inherit !important;
+}
+.pmj-shrunken-bubbles {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+}
+.pmj-shrunken-bubble {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background-color: #d8d8d8 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  flex: 0 0 auto !important;
+  transition: transform 0.15s ease !important;
+}
+.pmj-shrunken-bubble:hover {
+  transform: scale(1.25) !important;
+}
+.pmj-shrunken-bubble.is-completed {
+  background-color: #00873D !important;
+}
+/* Active (current/next-up) step gets a pulsing ring, matching
+   minimizedVersion's .pmj-active-circle treatment. */
+.pmj-shrunken-bubble.is-active {
+  animation: pmj-shrunken-pulse 2s ease-in-out infinite;
+}
+@keyframes pmj-shrunken-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(0, 135, 61, 0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(0, 135, 61, 0.1); }
+}
+
+.pmj-shrunken-progress {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+}
+.pmj-shrunken-progress-track {
+  display: inline-block !important;
+  width: 90px !important;
+  height: 5px !important;
+  background-color: rgb(234, 234, 234) !important;
+  border-radius: 3px !important;
+  overflow: hidden !important;
+}
+.pmj-shrunken-progress-fill {
+  display: block !important;
+  height: 100% !important;
+  width: 0%;
+  background-color: #00873D !important;
+  border-radius: 3px !important;
+}
+.pmj-shrunken-progress-text {
+  font-size: 14px !important;
+  color: rgb(154, 156, 165) !important;
+  white-space: nowrap !important;
+}
+
+/* ---------- Maximize button ---------- */
+/* #pendo-button-fffba553 is Pendo's own real button for this step (the
+   mirror of minimizedVersion's own minimize button) — it already carries
+   its own opposite-pointing arrow glyph and its own native click handling,
+   so it's only repositioned here, never text/content-replaced or rebuilt
+   as a custom element. Same absolute-in-place technique and row-collapse
+   as the widget above, and the same visual treatment (size, colors,
+   hover-grow) as minimizedVersion.css's #pendo-button-3b0ed2d6. */
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ [id^="pendo-row-"]:has(#pendo-button-fffba553) {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ .pendo-mock-flexbox-row:has(#pendo-button-fffba553),
+#pendo-guide-container-yD8Ga0j7tP2LQWVMs4s8BrILILQ .pendo-mock-flexbox-element:has(#pendo-button-fffba553) {
+  position: static !important;
+}
+#pendo-button-fffba553 {
+  position: absolute !important;
+  top: 16px !important;
+  right: 60px !important;
+  z-index: 6 !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 6px !important;
+  color: #4a4a4a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  transition: transform 0.15s ease !important;
+}
+#pendo-button-fffba553:hover {
+  transform: scale(1.12) !important;
+}
