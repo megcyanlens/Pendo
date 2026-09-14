@@ -9,11 +9,13 @@
   const noAccessStep = 2; // index 1 (step 2)
   const currentURL = window.location.pathname;
     const elementCardId = 'add-new-menu-item-create';
-
+    
+var guideSeenState = pendo.findGuideById('Tb4go-ygfnaCTyHmETJHG7Kjlng').steps.map(s => s.seenState)
+    console.log(guideSeenState);
   // console.log("[Pendo] Current URL:", currentURL);
+    
 if (currentURL.includes(sheetPageUrl)) {
     var guideInProgress = pendo.findGuideById('Tb4go-ygfnaCTyHmETJHG7Kjlng').isInProgress(); //isn't this always going to be true, since its the current guide
-    console.log(guideInProgress);
     if (guideInProgress) {
         pendo.goToStep({ destinationStepId: lastStepId });
     } else {
