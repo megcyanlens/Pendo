@@ -1,0 +1,499 @@
+/* minimizedVersion — collapses the "Task List" step (list id pendo-list-e0407f46)
+   from its authored vertical big-card layout into the horizontal compact bar:
+   title/subtitle row + progress% + collapse chevron on top, a single-line row
+   of icon+label steps with connector lines underneath, then the NEXT UP line.
+
+   Selectors are pinned to this step's specific element ids (or attribute hooks
+   scoped under its own container/list id) rather than the generic
+   [id^="pendo-row-"] / .pendo-mock-flexbox-* rules mainWindow.css already
+   defines globally, so this file always wins regardless of load order and
+   never fights mainWindow's own layout. */
+
+/* ---------- 0. Whole guide ---------- */
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So {
+  border-bottom: 1px solid #E3E3E3 !important;
+}
+
+/* ---------- 1. Header row: "Qlik Unlocked | subtitle" ---------- */
+
+/* Block + inline-block (rather than flex) so the title and subtitle sit on
+   one line no matter what: inline-block elements flow side by side inside
+   any block-level parent, without depending on the parent's display:flex
+   actually taking effect. */
+#pendo-row-b540ef72 .pendo-mock-flexbox-row {
+  position: relative !important;
+  display: block !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  min-height: 26px !important;
+}
+#pendo-row-b540ef72 .pendo-mock-flexbox-element {
+  position: static !important;
+  display: inline-block !important;
+  vertical-align: baseline !important;
+  width: auto !important;
+}
+#pendo-row-b540ef72 .pendo-block-controls-wrapper {
+  display: inline-block !important;
+  width: auto !important;
+}
+#pendo-text-67b1d6ba {
+  width: auto !important;
+  max-width: none !important;
+}
+#pendo-text-aefb8a5b {
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* Progress bar + minimize button are positioned absolutely IN PLACE rather
+   than being moved in the DOM into a wrapper (the previous approach). On
+   resize, Pendo re-renders this step from its authored template and
+   reconciles its expected children against what's actually there — an
+   element it moved out of its original parent isn't found where expected,
+   and gets deleted outright rather than recreated (confirmed: after a
+   resize, #pendo-progress-bar-8276d870 stops existing anywhere in the DOM
+   at all, not just outside .pmj-header-right). Absolute positioning
+   achieves the same visual result without ever touching either element's
+   DOM parent, so Pendo's own reconciliation is never confused. This is
+   the same technique mainWindow.css already uses for its own progress bar
+   (#pendo-progress-bar-1e86bb5b), positioned against
+   #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So, which already has
+   position:relative from its own authored inline style. */
+/* height:26px (matching the minimize button below) + align-items:center
+   makes the bar+text center within the same box the button occupies, so
+   the two visually align on the same vertical center despite the button
+   being taller than the bar+text's own natural content height. */
+#pendo-progress-bar-8276d870 {
+  position: absolute !important;
+  top: 16px !important;
+  right: 96px !important;
+  z-index: 5 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  width: auto !important;
+}
+#pendo-progress-bar-container-d39cd09b {
+  width: 90px !important;
+  height: 5px !important;
+  position: relative !important;
+}
+#pendo-progress-bar-background-d921e6fd,
+#pendo-progress-bar-fill-e7a5fcf7 {
+  height: 5px !important;
+  border-radius: 3px !important;
+}
+#pendo-text-6baee323 {
+  white-space: nowrap !important;
+}
+
+/* Minimize toggle — same absolute-in-place technique, plus explicitly
+   restyled to a small bordered white box with a dark chevron per the
+   reference screenshot, overriding its default floating green "^" look
+   (white border on white background, invisible). */
+#pendo-button-3b0ed2d6 {
+  position: absolute !important;
+  top: 16px !important;
+  right: 24px !important;
+  z-index: 5 !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 6px !important;
+  color: #4a4a4a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  transition: transform 0.15s ease !important;
+}
+#pendo-button-3b0ed2d6:hover {
+  transform: scale(1.12) !important;
+}
+
+/* Its row now only exists so Pendo's own re-render can still find/manage
+   the button inside it — collapse its footprint so it doesn't reserve
+   empty space in normal flow (the button is out of flow either way, being
+   absolutely positioned, but the row itself still had its own min-height). */
+#pendo-row-90f5fe12 {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+/* mainWindow.css has a global rule forcing every .pendo-mock-flexbox-element
+   inside any row (selector [id^="pendo-row-"] ...) to position:relative —
+   that turns the button's own wrapper into ITS absolute-positioned button's
+   containing block, instead of the guide container the button rule above
+   actually intends. Since that wrapper sits wherever this now-collapsed
+   row happens to fall in the page (not at a fixed, known offset), the
+   button ended up positioned against the wrong reference point. Forcing
+   both wrappers back to static removes them as positioning contexts
+   entirely, so the button's position:absolute escapes up to
+   #pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So as intended. */
+#pendo-row-90f5fe12 .pendo-mock-flexbox-row,
+#pendo-row-90f5fe12 .pendo-mock-flexbox-element {
+  position: static !important;
+}
+
+/* Hide the standalone "Task List" heading — not present in the compact bar.
+   Targets the rendered element id rather than data-wrapped-block-editing-id:
+   that attribute is a designer-session UUID that can change on republish,
+   while the plain id is the stable hook (same convention as mainWindow.js). */
+#pendo-text-96bffe4e {
+  display: none !important;
+}
+
+/* Gray divider between the checklist and NEXT UP — same tint as the
+   checklist band, on the row wrapping the <hr> (not the <hr> itself, whose
+   own border already draws the visible line — coloring both made the line
+   read darker/grayer than intended). Kept in case that row still exists;
+   harmless if it doesn't (see the JS-inserted .pmj-divider below, which no
+   longer depends on Pendo's own hr/row at all). */
+#pendo-row-b224e171 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Divider line inserted by minimizedVersion.js (the authored Pendo <hr>
+   was deleted). Margin is always transparent no matter what background
+   you set on the element that has it, so the vertical breathing room here
+   is padding instead (which does take the background) — otherwise the
+   gray wouldn't reach past the divider's own thin box and the checklist's
+   gray above/NEXT UP's gray below would still show a white gap through
+   the margin. The line itself is a centered background-image rather than
+   a border, since a border always sits outside padding (at the box's
+   outer edge) and would end up pinned to the top or bottom of the padded
+   area instead of centered within it. */
+.pmj-divider {
+  border: none !important;
+  height: 0 !important;
+  margin: 0 24px !important;
+  padding: 2px 0 !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-image: linear-gradient(rgb(214, 214, 214), rgb(214, 214, 214)) !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 1px !important;
+  background-position: center !important;
+}
+
+/* ---------- 2. Step row: icon + label pairs joined by connector lines ---------- */
+
+/* Margin (not padding) 24px left/right, matching how the other rows in
+   this guide are now authored (margin: 0 24px), so the gray checklist
+   panel sits inset from the card edges like the NEXT UP / Duration rows
+   do, rather than bleeding to the edges. Bottom margin is 0 so the gray
+   touches the divider directly below it, with no white gap between them. */
+#pendo-list-e0407f46 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  list-style: none !important;
+  margin: 8px 24px 0 !important;
+  padding: 20px 16px !important;
+  gap: 0 !important;
+  overflow-x: auto !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+#pendo-list-e0407f46 > li {
+  display: flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  list-style: none !important;
+  /* The authored li has a 14px bottom padding meant for the vertical
+     big-card layout; left in place, it makes each li much taller than its
+     actual icon+label content, so the OL's align-items:center (and the
+     connector divs riding alongside it) center against that taller box
+     instead of the visible content — pulling the connector lines visibly
+     lower than the text. Zeroing it lines both up. */
+  padding-bottom: 0 !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+/* Icon + label are two absolutely-positioned mock-flexbox-elements in the
+   authored markup (icon at left:0, label at left:30px) — same shape as the
+   header row above, so the same inline-block fix applies: it puts them side
+   by side without depending on display:flex on the row actually taking
+   effect. */
+#pendo-list-e0407f46 [data-_pendo-row-3] .pendo-mock-flexbox-row {
+  position: relative !important;
+  display: block !important;
+  white-space: nowrap !important;
+  min-height: 20px !important;
+  width: auto !important;
+}
+#pendo-list-e0407f46 [data-_pendo-row-3] .pendo-mock-flexbox-element {
+  position: static !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  width: auto !important;
+}
+
+/* General-purpose hook for excluding a step from refreshState's active/
+   completed/percent accounting in minimizedVersion.js — nothing currently
+   sets this class, but it's kept as infrastructure other steps can use. */
+#pendo-list-e0407f46 > li.pmj-hidden-step {
+  display: none !important;
+}
+
+/* Progress-circle icon, shrunk down for the compact row. Margin-right gives
+   the label some breathing room now that the pair is laid out inline-block
+   (no flex "gap" to rely on). */
+#pendo-list-e0407f46 .pendo-task-list-progress-circle {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0 8px 0 0 !important;
+  vertical-align: middle !important;
+}
+/* The authored SVG ships with a hardcoded dasharray placeholder on the fill
+   ring (meant for Pendo to recompute per-step sub-progress); since we don't
+   track that here, force it fully empty so unreached steps render as a
+   plain hollow ring instead of a partially-filled arc. Tag-qualified with
+   "circle" because the *completed* step's icon is a totally different SVG
+   shape (path + polyline, no circles at all) that happens to reuse this
+   same class name on its <svg> root — without the tag qualifier this rule
+   would also match that <svg>, and since its path/polyline don't set their
+   own dasharray they'd inherit 0 and render invisible. */
+#pendo-list-e0407f46 circle.pendo-progress-circle-fill {
+  stroke-dasharray: 0, 100 !important;
+}
+/* The active ("next up") step's ring turns green — the fill stays invisible
+   per the rule above, so this recolors the background ring itself. */
+#pendo-list-e0407f46 .pendo-task-list-progress-circle.pmj-active-circle circle.pendo-progress-circle-background {
+  stroke: #00873D !important;
+}
+
+/* Step label. outline:none removes the browser's default focus ring that
+   otherwise shows up around this button after a click — focus is applied
+   on mousedown, before any click handler (ours included) ever runs, so
+   nothing in the click logic can prevent it; the stray outline is exactly
+   that ring, not anything drawn by the styles above. */
+#pendo-list-e0407f46 button[id^="pendo-a11y-list-item-button-block-"] {
+  width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+#pendo-list-e0407f46 [id^="pendo-text-045b0675-"] {
+  white-space: nowrap !important;
+}
+/* Description line isn't used in the compact bar */
+#pendo-list-e0407f46 [id^="pendo-text-f50e9d79-"] {
+  display: none !important;
+}
+
+/* Active step (the one that's "next up") pulses, matching mainWindow's
+   existing .is-active treatment */
+#pendo-list-e0407f46 .pendo-task-list-progress-circle.pmj-active-circle {
+  border-radius: 50%;
+  animation: pmj-mini-pulse 2s ease-in-out infinite;
+}
+@keyframes pmj-mini-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 135, 61, 0.15); }
+  50% { box-shadow: 0 0 0 3px rgba(0, 135, 61, 0.08); }
+}
+
+/* Completed step: no override at all — Pendo's own check-circle icon
+   (a <path> arc plus a <polyline> tick, both inheriting the SVG's own
+   stroke="#00873D", on a transparent background) renders correctly on
+   its own. The previous solid-disc-plus-white-checkmark treatment has
+   been removed entirely per request. */
+
+/* Locked step ("The Qlik Experience" before hydration completes) — same
+   lock-icon-overlay treatment as mainWindow.css's own .pmj-lock-overlay/
+   .pmj-lock-icon (added/removed by minimizedVersion.js), just sized down
+   to fit this step's much smaller compact list item. The <li> itself is
+   already position:relative from Pendo's own authored inline style, so
+   the overlay's position:absolute anchors to it directly. */
+#pendo-list-e0407f46 > li.pmj-locked .pmj-lock-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 5 !important;
+}
+#pendo-list-e0407f46 > li.pmj-locked .pmj-lock-icon {
+  width: 14px !important;
+  height: 14px !important;
+  color: #b7b7b7 !important;
+}
+
+/* Connector line between steps, inserted by minimizedVersion.js */
+.pmj-connector {
+  flex: 0 0 28px !important;
+  min-width: 28px !important;
+  height: 1px !important;
+  background-color: #d8d8d8 !important;
+  margin: 0 6px !important;
+}
+.pmj-connector.pmj-connector-completed {
+  background-color: #00873D !important;
+}
+
+/* ---------- 3. NEXT UP row ---------- */
+
+/* Square on top (it sits directly against the divider above, same
+   background, so no rounding is needed there) and rounded 8px on the
+   bottom — the bottom edge of the whole continuous gray region that
+   starts with the checklist's rounded top. */
+#pendo-row-df33028b {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+  margin-top: 0 !important;
+}
+#pendo-row-df33028b .pendo-mock-flexbox-row {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: auto !important;
+}
+#pendo-row-df33028b .pendo-mock-flexbox-element {
+  position: static !important;
+  width: auto !important;
+}
+/* "NEXT UP" and the Welcome Video paragraph are the row's only two
+   .pendo-mock-flexbox-element children, but they need opposite flex
+   behavior — marked by minimizedVersion.js (which finds each by its
+   stable text id) rather than relying on DOM order or :has(). */
+#pendo-row-df33028b .pmj-nextup-fixed {
+  flex: 0 0 auto !important;
+}
+#pendo-row-df33028b .pmj-nextup-flex {
+  /* The only element in this row allowed to shrink/wrap: grows to fill
+     whatever space the fixed-width neighbors leave, and min-width:0
+     overrides the flex default (min-width:auto, which floors an item at
+     its content's intrinsic width and would otherwise stop it from ever
+     shrinking below that, i.e. never wrapping). */
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+#pendo-text-113f6bd1 {
+  width: auto !important;
+  white-space: nowrap !important;
+}
+#pendo-text-44772b1d {
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* Duration text + Watch-now button, relocated by minimizedVersion.js from
+   their own separate row into this one so NEXT UP / Welcome Video and
+   Duration / Watch now all sit in the same horizontal bar, per the target.
+   margin-left:auto pushes this cluster to the row's right edge regardless
+   of how many elements precede it; flex:0 0 auto keeps it (and the "NEXT
+   UP" label) at its natural content width, never shrinking or wrapping —
+   the Welcome Video paragraph is the only thing in the row that does. */
+.pmj-nextup-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-left: auto !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+#pendo-text-654f055c {
+  width: auto !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+#pendo-button-971f7bf5 {
+  white-space: nowrap !important;
+}
+
+/* Its original row is now empty — everything in it was moved above. */
+#pendo-row-ce30db4b {
+  display: none !important;
+}
+
+/* ---------- 4. Add-on chooser (Learn & Level-up only) ---------- */
+/* Pasted from minimizedVersion.html into a code block, then moved by
+   minimizedVersion.js into the NEXT UP row itself, filling the space the
+   "Learn & Level-up — ..." description text occupied (hidden while this
+   shows). mainWindow.css's own #addOnChooser/td/.icon rules are UNSCOPED
+   globals sized for its big card (60-100px cells, 20-24px icons) — left
+   that way here too would either get overridden by (or override) that
+   step's own table depending on stylesheet load order, since both files'
+   selectors would collide. Everything below is scoped to this step's own
+   guide container so the two tables can never affect each other, and
+   shrunk down into single-line icon+label pills that actually fit inline
+   in a compact row — only the eligible options are shown at all (see
+   updateAddOnChooser), so there's no need for an inactive/grayed treatment
+   here, just a plain pill vs. one with a green border. display:none by
+   default; JS switches it to flex once eligible. */
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser {
+/*   display: none; */
+  flex: 1 1 auto !important;
+     /*   justify-content: center; for center alignment*/
+  min-width: 0 !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+      margin-left: 24px !important;
+      margin-right: 24px !important;
+  width: auto !important;
+  border-spacing: 0 !important;
+    padding: 0px 16px 24px 16x !important; /*  8px 16px 8px 16px !important;  top right bottom left*/
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important; 
+
+}
+/* display:contents drops the <tbody>/<tr> boxes from layout entirely while
+   keeping their <td> children as direct flex items of #addOnChooser —
+   the simplest way to flatten a table into a single-line pill row without
+   fighting table layout rules. */
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser tbody,
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser tr {
+  display: contents !important;
+}
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser td {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: auto !important;
+  width: auto !important;
+  padding: 3px 8px !important;
+  border-radius: 12px !important;
+  border: 1px solid #d9d9d9 !important;
+  background-color: #ffffff !important;
+  color: #4a4a4a !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+  transition: transform 0.15s ease !important;
+}
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser td:hover {
+  cursor: pointer !important;
+  transform: scale(1.05) !important;
+}
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser td.is-active {
+  border-color: #00873D !important;
+}
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser .icon {
+  width: 13px !important;
+  height: 13px !important;
+  flex: 0 0 auto !important;
+}
+#pendo-guide-container-WKhm-v1XKs6Uv_f3qujXNq-K_So #addOnChooser td p {
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
