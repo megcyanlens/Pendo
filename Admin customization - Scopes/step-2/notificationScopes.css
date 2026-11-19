@@ -2,6 +2,13 @@
    Notifications & messaging permission rows, matching the Manage default
    permissions list. The hidden poll is shown or hidden by SHOW_HIDDEN_POLL in the JS. */
 
+/* Guide border: overrides Pendo's rgb(217, 217, 217) on all sides, no bottom border */
+#pendo-guide-container-YM_mD_RXmSCLU_VlB0GhYKZLJww,
+._pendo-step-container-styles {
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  border-bottom: 0 !important;
+}
+
 /* "Notifications & messaging" header row: clicking it minimizes / expands (see JS) */
 #pendo-row-5124e943,
 #pendo-row-5124e943 * {
