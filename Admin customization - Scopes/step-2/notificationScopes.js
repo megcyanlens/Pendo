@@ -8,6 +8,7 @@
   var HEADER_ROW_ID = 'pendo-row-5124e943';      // "Notifications & messaging" row
   var HEADER_BUTTON_ID = 'pendo-button-fa1ae14b'; // chevron button in that row
   var START_EXPANDED = false;         // false = the step opens minimized
+  var ANIMATION_MS = 220;             // minimize / expand animation length (0 = none)
   var SHOW_HIDDEN_POLL = true;        // true while testing; set to false before launch
   var SEPARATOR = ' | ';
 
@@ -88,19 +89,70 @@
     }
     headerRow.classList.add('qs-header-row');
 
-    function render() {
+    function showBody(show) {
       body.forEach(function (el) {
-        var hide = !expanded || (!SHOW_HIDDEN_POLL && pollParts.indexOf(el) !== -1);
+        var hide = !show || (!SHOW_HIDDEN_POLL && pollParts.indexOf(el) !== -1);
         if (hide) el.style.setProperty('display', 'none', 'important');
         else el.style.setProperty('display', 'block');
       });
+    }
+
+    function render() {
       headerRow.classList.toggle('qs-expanded', expanded);
       if (headerButton) {
         headerButton.setAttribute('aria-expanded', String(expanded));
         headerButton.setAttribute('aria-label', expanded ? 'Minimize' : 'Expand');
       }
       if (!expanded && openDropdown) openDropdown.close(false);
+    }
+
+    // The box whose height animates: Pendo's step size container.
+    var box = root.querySelector('._pendo-step-container-size') || headerRow.parentNode;
+    var animating = null;
+
+    function animateTo(show) {
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // Start from the height on screen now, even if a previous animation is mid-way.
+      var from = box.getBoundingClientRect().height;
+      if (animating) animating.finish();
+      // Measure the end height without painting: lay out the end state, then put it back.
+      showBody(show);
       relayout();
+      var to = box.getBoundingClientRect().height;
+
+      if (reduceMotion || ANIMATION_MS <= 0 || Math.abs(to - from) < 1) {
+        render();
+        return;
+      }
+
+      // While closing, keep the rows visible until the box has shrunk.
+      if (!show) showBody(true);
+      render();
+
+      var endHeight = box.style.getPropertyValue('height');
+      var endPriority = box.style.getPropertyPriority('height');
+      box.style.setProperty('overflow', 'hidden', 'important');
+      box.style.setProperty('height', from + 'px', 'important');
+      void box.offsetHeight; // start from the old height
+      box.style.setProperty('transition', 'height ' + ANIMATION_MS + 'ms ease', 'important');
+      box.style.setProperty('height', to + 'px', 'important');
+
+      var timer;
+      function finish() {
+        clearTimeout(timer);
+        box.removeEventListener('transitionend', onEnd);
+        box.style.removeProperty('transition');
+        box.style.removeProperty('overflow');
+        if (endHeight) box.style.setProperty('height', endHeight, endPriority);
+        else box.style.removeProperty('height');
+        if (!show) showBody(false);
+        relayout();
+        animating = null;
+      }
+      function onEnd(e) { if (e.target === box && e.propertyName === 'height') finish(); }
+      box.addEventListener('transitionend', onEnd);
+      timer = setTimeout(finish, ANIMATION_MS + 100); // in case transitionend doesn't fire
+      animating = { finish: finish };
     }
 
     // Capture phase, so the click is handled here and never reaches the button's
@@ -109,10 +161,12 @@
       e.preventDefault();
       e.stopPropagation();
       expanded = !expanded;
-      render();
+      animateTo(expanded);
     }, true);
 
+    showBody(expanded);
     render();
+    relayout();
   }
 
   // Build a button + listbox in place of a native <select>. The <select> stays
