@@ -33,10 +33,6 @@
         e.preventDefault();
         toggle(sw);
       });
-      var label = sw.getAttribute('aria-labelledby') && group.querySelector('#' + sw.getAttribute('aria-labelledby'));
-      if (label) {
-        label.addEventListener('click', function () { toggle(sw); });
-      }
     });
 
     function toggle(sw) {

@@ -2,7 +2,7 @@
 
 Custom code for the "Customize messages for end-users" lightbox guide.
 
-- The code block draws three on/off toggles (multi-select, keyboard accessible, `role="switch"`). No multi-choice poll is needed.
+- The code block draws three on/off toggles, each with a bold title and a smaller description (multi-select, keyboard accessible, `role="switch"`). Only the switch itself is clickable. No multi-choice poll is needed.
 - Every change writes the state of all three into the open-text poll `lexrb574p9e`, e.g.
   `Onboarding guides: On | New feature announcements: Off | Surveys and feedback: On`
 
