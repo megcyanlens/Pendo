@@ -3,7 +3,7 @@
 Custom code for the "Notifications & messaging" section of the Manage default permissions dialog.
 
 - The code block draws three permission rows, styled like the Data quality list: a title, a grey description, and an Allowed / Not allowed dropdown. The JS turns each `<select>` into a Qlik-style dropdown: blue outline on focus, and a checkmark (not a blue fill) on the selected option. Mouse and keyboard (arrows, Enter, Escape) both work.
-- Clicking the "Notifications & messaging" header row (`#pendo-row-5124e943`) calls `pendo.onGuidePrevious()`, and the row shows a pointer on hover. Clicks on the ^ button are left to its own action.
+- Clicking anywhere on the "Notifications & messaging" header row (`#pendo-row-5124e943`) clicks the ^ button (`#pendo-button-fa1ae14b`), so the row does whatever that button's Pendo action is. The row shows a pointer on hover.
 - Every change writes the value of all three into the open-text poll `6r0jeqmk6xd`, e.g.
   `Onboarding guides: Allowed | New feature announcements: Not allowed | Surveys and feedback: Allowed`
 

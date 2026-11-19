@@ -5,7 +5,8 @@
    "Onboarding guides: Allowed | New feature announcements: Not allowed | Surveys and feedback: Allowed" */
 (function () {
   var HIDDEN_POLL_ID = '6r0jeqmk6xd'; // open-text poll that stores the result
-  var HEADER_ROW_ID = 'pendo-row-5124e943'; // "Notifications & messaging" row: click goes back a step
+  var HEADER_ROW_ID = 'pendo-row-5124e943';      // "Notifications & messaging" row
+  var HEADER_BUTTON_ID = 'pendo-button-fa1ae14b'; // ^ button; clicking the row clicks it
   var SHOW_HIDDEN_POLL = true;        // true while testing; set to false before launch
   var SEPARATOR = ' | ';
 
@@ -59,14 +60,15 @@
       });
     }
 
-    // Clicking the header row goes back to the previous step. Clicks on a button
-    // in the row (the ^ minimize button) are left to that button's own action,
-    // so they don't go back twice.
+    // Clicking anywhere on the header row clicks the ^ button, so the row does
+    // whatever that button's Pendo action is. Clicks on the button itself are
+    // left alone, so its action runs once.
     var headerRow = root.querySelector('#' + HEADER_ROW_ID);
     if (headerRow) {
       headerRow.addEventListener('click', function (e) {
         if (e.target.closest('button')) return;
-        if (window.pendo && typeof pendo.onGuidePrevious === 'function') pendo.onGuidePrevious();
+        var headerButton = root.querySelector('#' + HEADER_BUTTON_ID);
+        if (headerButton) headerButton.click();
       });
     }
 

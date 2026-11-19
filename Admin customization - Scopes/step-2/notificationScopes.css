@@ -2,7 +2,7 @@
    Notifications & messaging permission rows, matching the Manage default
    permissions list. The hidden poll is shown or hidden by SHOW_HIDDEN_POLL in the JS. */
 
-/* "Notifications & messaging" header row: clicking it goes back a step (see JS) */
+/* "Notifications & messaging" header row: clicking it clicks the ^ button (see JS) */
 #pendo-row-5124e943,
 #pendo-row-5124e943 * {
   cursor: pointer;
