@@ -1,33 +1,31 @@
-/* Pendo custom code block: CSS tab
-   Message preference toggles (multi-choice poll c9h0svnf0rs -> hidden open-text poll lexrb574p9e) */
+/* Pendo code block: CSS tab
+   Message preference toggles. The hidden open-text poll is shown or hidden by
+   SHOW_HIDDEN_POLL in the JS tab, not here. */
 
-/* Hidden poll: question text and its row (the JS also hides the row) */
-._pendo-open-text-poll-question[data-pendo-poll-id="lexrb574p9e"],
-form[data-pendo-poll-id="lexrb574p9e"] {
-  display: none !important;
+.qt-toggles {
+  display: block;
+  margin: 0 0 8px;
+  color: rgb(64, 64, 64);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 400;
+  text-align: left;
 }
 
-/* Native radios stay in the DOM but are not shown */
-[data-pendo-poll-id="c9h0svnf0rs"] input.pendo-radio.qt-hidden-native {
-  position: absolute !important;
-  opacity: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  margin: 0 !important;
-  pointer-events: none !important;
-}
-
-/* One row per message type */
-[data-pendo-poll-id="c9h0svnf0rs"] .qt-toggle-row {
-  display: flex !important;
+.qt-toggle-row {
+  display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
-[data-pendo-poll-id="c9h0svnf0rs"] .qt-toggle-row label.pendo-radio {
-  margin-left: 0 !important;
-  cursor: pointer;
+.qt-toggle-row + .qt-toggle-row {
+  margin-top: 8px;
+}
+
+.qt-label {
   line-height: 22px;
+  cursor: pointer;
+  white-space: normal;
 }
 
 /* The switch */

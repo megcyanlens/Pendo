@@ -1,1 +1,17 @@
-<!-- HTML tab: intentionally empty. All markup is built by customizeMessages.js -->
+<!-- Pendo code block: HTML tab
+     One row per message type. data-name is the text written to the hidden poll;
+     aria-checked sets the starting state ("true" = On). -->
+<div class="qt-toggles" role="group" aria-label="In-product messages">
+  <div class="qt-toggle-row">
+    <button type="button" class="qt-switch" role="switch" aria-checked="true" aria-labelledby="qt-label-onboarding" data-name="Onboarding guides"></button>
+    <span class="qt-label" id="qt-label-onboarding">Onboarding guides: Guided tours and tips the first time users open the hub, apps and new areas of Qlik Cloud.</span>
+  </div>
+  <div class="qt-toggle-row">
+    <button type="button" class="qt-switch" role="switch" aria-checked="true" aria-labelledby="qt-label-features" data-name="New feature announcements"></button>
+    <span class="qt-label" id="qt-label-features">New feature announcements: “What’s new” highlights when Qlik releases features to your tenant.</span>
+  </div>
+  <div class="qt-toggle-row">
+    <button type="button" class="qt-switch" role="switch" aria-checked="true" aria-labelledby="qt-label-surveys" data-name="Surveys and feedback"></button>
+    <span class="qt-label" id="qt-label-surveys">Surveys and feedback: In-context feedback badges and popup surveys</span>
+  </div>
+</div>
