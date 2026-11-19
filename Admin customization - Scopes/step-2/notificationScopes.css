@@ -1,0 +1,70 @@
+/* Pendo code block: CSS tab
+   Notifications & messaging permission rows, matching the Manage default
+   permissions list. The hidden poll is shown or hidden by SHOW_HIDDEN_POLL in the JS. */
+
+.qs-list {
+  display: block;
+  padding: 4px 16px 8px 36px;
+  font-family: inherit;
+  text-align: left;
+}
+
+.qs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+.qs-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.qs-title {
+  color: rgb(89, 89, 89);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.qs-desc {
+  color: rgb(117, 117, 117);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+/* Dropdown styled like the Qlik "Allowed" selector */
+.qs-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  flex: 0 0 auto;
+  height: 32px;
+  margin: 0;
+  padding: 0 32px 0 12px;
+  border: 1px solid rgb(204, 204, 204);
+  border-radius: 4px;
+  background-color: rgb(255, 255, 255);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23595959' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  color: rgb(64, 64, 64);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.qs-select:hover {
+  border-color: rgb(166, 166, 166);
+}
+
+.qs-select:focus-visible {
+  outline: 2px solid rgb(0, 135, 61);
+  outline-offset: 1px;
+}

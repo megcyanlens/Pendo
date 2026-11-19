@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- Local test: the Notifications & messaging guide step as Pendo renders it.
+     Serve this folder (python -m http.server) and open test.html. -->
+<html lang="en"><head><meta charset="utf-8"><title>Scopes test</title>
+<link rel="stylesheet" href="notificationScopes.css">
+<style>body{font-family:"Source Sans Pro",sans-serif;background:#eee;padding:20px}#wrap{width:751px;background:#fff}</style>
+</head><body><div id="wrap">
+<div id="pendo-base-YM_mD_RXmSCLU_VlB0GhYKZLJww" data-layout="lightboxBlank" class="_pendo-step-container _pendo-guide-walkthrough_" style="width: 100%; display: block;"><div id="pendo-g-IbCa2vInQxLkQQTu3bopSQ8xb28" class="_pendo-step-container-size" style="position: relative; width: 100%; display: block; height: 200px;"><div role="dialog" id="pendo-guide-container-YM_mD_RXmSCLU_VlB0GhYKZLJww" class="_pendo-step-container-styles" style="background-color: #fff; box-sizing: border-box; padding: 0px; height: 100%; position: relative; border: 1px solid rgb(217, 217, 217); display: block;">
+<div id="pendo-row-5124e943" class="_pendo-row" style="display: block;"><div class="pendo-mock-flexbox-row" style="display: block; position: relative; width: 100%; min-height: 46px;"><div class="pendo-mock-flexbox-element" style="display: inline-block; position: absolute; left: 0px; top: 12px;"><div class="bb-text _pendo-text-custom" style="color: rgb(64, 64, 64); font-size: 14px; line-height: 1.6; font-weight: 300; margin: 0px 4px 0px 16px; width: 361.5px;"><p style="margin: 0px;"><strong style="font-weight: 700; white-space: pre-wrap;">Notifications &amp; messaging</strong></p></div></div><div class="pendo-mock-flexbox-element" style="display: inline-block; position: absolute; right: 0px; top: 0px;"><button aria-label="Minimize" class="bb-button _pendo-button" type="button" style="color: rgb(64, 64, 64); font-weight: 600; background-color: #fff; border-radius: 4px; font-size: 18px; padding: 4px 6px 2px; margin: 10px 5px; border: 1px solid #fff;">^</button></div></div></div>
+<div id="pendo-code-6e448ffc" style="display: block;"></div>
+<div id="pendo-text-73d84303" class="bb-text _pendo-text-paragraph _pendo-open-text-poll-question" data-pendo-poll-id="6r0jeqmk6xd" style="color: rgb(64, 64, 64); font-size: 14px; line-height: 1.6; font-weight: 300; margin: 40px 0px 0px 16px;"><p style="margin: 0px;">Hidden poll</p></div>
+<div id="pendo-row-39626510" class="_pendo-row" style="display: block;"><div class="pendo-mock-flexbox-row" style="display: block; position: relative; width: 100%; min-height: 44px;"><div class="pendo-mock-flexbox-element" style="display: inline-block; position: absolute; left: 0px;"><form data-pendo-poll-id="6r0jeqmk6xd" class="pendo-block-wrapper _pendo-open-text-poll-wrapper" style="display: inline-block; width: 100%;"><textarea id="pendo-textarea-31422a81" cols="50" rows="4" data-pendo-poll-id="6r0jeqmk6xd" class="_pendo-open-text-poll-input" style="box-sizing: border-box; display: block; border-radius: 4px; height: 40px; margin: 0px 0px 0px 16px; width: 700px; padding: 8px 10px; resize: none; font-size: 14px; border: 1px solid rgb(218, 220, 229);"></textarea></form></div></div></div>
+<div id="pendo-row-2c1bb8a3" class="_pendo-row" style="display: block;"><div class="pendo-mock-flexbox-row" style="display: block; position: relative; width: 100%; min-height: 46px;"><div class="pendo-mock-flexbox-element" style="display: inline-block; position: absolute; left: 0px;"><button aria-label="Save" class="bb-button _pendo-button" type="button" style="color: #fff; font-weight: 600; background-color: rgb(0, 135, 61); border-radius: 4px; font-size: 14px; padding: 4px 11px 6px; margin: 10px 0px 10px 16px; border: 1px solid rgb(0, 135, 61);">Save</button></div></div></div>
+</div></div></div>
+</div>
+<script>
+  // Stand-in for Pendo rendering the HTML tab into the code block.
+  fetch('notificationScopes.html').then(function (r) { return r.text(); }).then(function (html) {
+    document.getElementById('pendo-code-6e448ffc').innerHTML = html;
+    var s = document.createElement('script'); s.src = 'notificationScopes.js'; document.body.appendChild(s);
+  });
+</script>
+</body></html>
