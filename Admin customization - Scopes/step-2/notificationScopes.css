@@ -74,9 +74,9 @@
 }
 
 .qs-title {
-  color: rgb(89, 89, 89);
+  color: rgba(0, 0, 0, 0.55);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 18px;
 }
 
