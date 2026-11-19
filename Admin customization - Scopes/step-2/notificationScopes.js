@@ -1,6 +1,7 @@
 /* Pendo code block: JS tab
-   Writes the value of every dropdown into the open-text poll, so the Save
-   button's poll submission records it, e.g.
+   Turns each <select> from the HTML tab into a Qlik-style dropdown (checkmark on
+   the selected option) and writes every value into the open-text poll, so the
+   Save button's poll submission records it, e.g.
    "Onboarding guides: Allowed | New feature announcements: Not allowed | Surveys and feedback: Allowed" */
 (function () {
   var HIDDEN_POLL_ID = '6r0jeqmk6xd'; // open-text poll that stores the result
@@ -14,6 +15,8 @@
     }
   } catch (e) { /* fall back to document */ }
 
+  var openDropdown = null;
+
   function init(attempt) {
     var list = root.querySelector('.qs-list');
     // Use the poll ID, or the guide's only open-text poll if the ID has changed.
@@ -26,10 +29,13 @@
     if (list.getAttribute('data-qs-ready') === 'true') return;
     list.setAttribute('data-qs-ready', 'true');
 
-    var selects = Array.prototype.slice.call(list.querySelectorAll('.qs-select'));
-    selects.forEach(function (sel) {
-      sel.addEventListener('change', writeState);
-    });
+    var selects = Array.prototype.slice.call(list.querySelectorAll('select.qs-select'));
+    selects.forEach(function (sel, i) { buildDropdown(sel, i, writeState); });
+
+    // Close an open menu when clicking anywhere else.
+    document.addEventListener('mousedown', function (e) {
+      if (openDropdown && !openDropdown.wrap.contains(e.target)) openDropdown.close(false);
+    }, true);
 
     function writeState() {
       textarea.value = selects.map(function (sel) {
@@ -54,6 +60,125 @@
 
     writeState();
     relayout();
+  }
+
+  // Build a button + listbox in place of a native <select>. The <select> stays
+  // in the DOM (hidden) and keeps the current value.
+  function buildDropdown(sel, index, onChange) {
+    var menuId = 'qs-menu-' + index;
+    var wrap = document.createElement('div');
+    wrap.className = 'qs-dropdown';
+
+    var trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'qs-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-controls', menuId);
+    ['aria-labelledby', 'aria-describedby'].forEach(function (a) {
+      if (sel.getAttribute(a)) trigger.setAttribute(a, sel.getAttribute(a));
+    });
+    var valueEl = document.createElement('span');
+    valueEl.className = 'qs-trigger-value';
+    var chevron = document.createElement('span');
+    chevron.className = 'qs-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    trigger.appendChild(valueEl);
+    trigger.appendChild(chevron);
+
+    var menu = document.createElement('ul');
+    menu.className = 'qs-menu';
+    menu.id = menuId;
+    menu.setAttribute('role', 'listbox');
+    menu.tabIndex = -1;
+    if (sel.getAttribute('aria-labelledby')) menu.setAttribute('aria-labelledby', sel.getAttribute('aria-labelledby'));
+    menu.hidden = true;
+
+    var items = Array.prototype.map.call(sel.options, function (opt, i) {
+      var li = document.createElement('li');
+      li.className = 'qs-option';
+      li.id = menuId + '-opt-' + i;
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-value', opt.value);
+      li.textContent = opt.text;
+      li.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      li.addEventListener('click', function () { choose(i); });
+      li.addEventListener('mousemove', function () { setActive(i); });
+      menu.appendChild(li);
+      return li;
+    });
+
+    var active = sel.selectedIndex;
+
+    function render() {
+      valueEl.textContent = sel.options[sel.selectedIndex].text;
+      items.forEach(function (li, i) {
+        li.setAttribute('aria-selected', String(i === sel.selectedIndex));
+      });
+    }
+
+    function setActive(i) {
+      active = i;
+      items.forEach(function (li, j) { li.classList.toggle('qs-active', j === i); });
+      menu.setAttribute('aria-activedescendant', items[i].id);
+    }
+
+    function open() {
+      if (openDropdown && openDropdown !== api) openDropdown.close(false);
+      menu.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      wrap.classList.add('qs-open');
+      setActive(sel.selectedIndex);
+      menu.focus();
+      openDropdown = api;
+    }
+
+    function close(returnFocus) {
+      menu.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      wrap.classList.remove('qs-open');
+      if (openDropdown === api) openDropdown = null;
+      if (returnFocus) trigger.focus();
+    }
+
+    function choose(i) {
+      var changed = sel.selectedIndex !== i;
+      sel.selectedIndex = i;
+      render();
+      close(true);
+      if (changed) onChange();
+    }
+
+    trigger.addEventListener('click', function () {
+      if (menu.hidden) open(); else close(true);
+    });
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open();
+      }
+    });
+    menu.addEventListener('keydown', function (e) {
+      var last = items.length - 1;
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, last)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Home') { e.preventDefault(); setActive(0); }
+      else if (e.key === 'End') { e.preventDefault(); setActive(last); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(active); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === 'Tab') { close(false); }
+    });
+
+    var api = { wrap: wrap, close: close };
+
+    sel.classList.add('qs-native');
+    sel.tabIndex = -1;
+    sel.setAttribute('aria-hidden', 'true');
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+    wrap.appendChild(sel);
+    render();
   }
 
   // Resize the guide to fit after the DOM changes.

@@ -2,7 +2,7 @@
 
 Custom code for the "Notifications & messaging" section of the Manage default permissions dialog.
 
-- The code block draws three permission rows, styled like the Data quality list: a title, a grey description, and an Allowed / Not allowed dropdown.
+- The code block draws three permission rows, styled like the Data quality list: a title, a grey description, and an Allowed / Not allowed dropdown. The JS turns each `<select>` into a Qlik-style dropdown: blue outline on focus, and a checkmark (not a blue fill) on the selected option. Mouse and keyboard (arrows, Enter, Escape) both work.
 - Every change writes the value of all three into the open-text poll `6r0jeqmk6xd`, e.g.
   `Onboarding guides: Allowed | New feature announcements: Not allowed | Surveys and feedback: Allowed`
 
