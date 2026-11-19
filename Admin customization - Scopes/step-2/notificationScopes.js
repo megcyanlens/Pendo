@@ -6,7 +6,8 @@
 (function () {
   var HIDDEN_POLL_ID = '6r0jeqmk6xd'; // open-text poll that stores the result
   var HEADER_ROW_ID = 'pendo-row-5124e943';      // "Notifications & messaging" row
-  var HEADER_BUTTON_ID = 'pendo-button-fa1ae14b'; // ^ button; clicking the row clicks it
+  var HEADER_BUTTON_ID = 'pendo-button-fa1ae14b'; // chevron button in that row
+  var START_EXPANDED = false;         // false = the step opens minimized
   var SHOW_HIDDEN_POLL = true;        // true while testing; set to false before launch
   var SEPARATOR = ' | ';
 
@@ -52,28 +53,66 @@
       });
     }
 
-    if (!SHOW_HIDDEN_POLL) {
-      var pollId = textarea.getAttribute('data-pendo-poll-id');
-      var question = root.querySelector('._pendo-open-text-poll-question[data-pendo-poll-id="' + pollId + '"]');
-      [question, textarea.closest('._pendo-row')].forEach(function (el) {
-        if (el) el.style.setProperty('display', 'none', 'important');
-      });
-    }
-
-    // Clicking anywhere on the header row clicks the ^ button, so the row does
-    // whatever that button's Pendo action is. Clicks on the button itself are
-    // left alone, so its action runs once.
-    var headerRow = root.querySelector('#' + HEADER_ROW_ID);
-    if (headerRow) {
-      headerRow.addEventListener('click', function (e) {
-        if (e.target.closest('button')) return;
-        var headerButton = root.querySelector('#' + HEADER_BUTTON_ID);
-        if (headerButton) headerButton.click();
-      });
-    }
+    // The hidden poll's question and textarea row stay hidden unless SHOW_HIDDEN_POLL.
+    var pollId = textarea.getAttribute('data-pendo-poll-id');
+    var pollParts = [
+      root.querySelector('._pendo-open-text-poll-question[data-pendo-poll-id="' + pollId + '"]'),
+      textarea.closest('._pendo-row')
+    ].filter(Boolean);
 
     writeState();
-    relayout();
+    setupAccordion(pollParts);
+  }
+
+  // Minimized / expanded states. The header row (and its chevron button) toggles
+  // everything below it: the permission rows, the hidden poll and Save.
+  function setupAccordion(pollParts) {
+    var headerRow = root.querySelector('#' + HEADER_ROW_ID);
+    if (!headerRow) {
+      relayout();
+      return;
+    }
+    var headerButton = root.querySelector('#' + HEADER_BUTTON_ID);
+    var body = Array.prototype.filter.call(headerRow.parentNode.children, function (el) {
+      return el !== headerRow && (headerRow.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    var expanded = START_EXPANDED;
+
+    if (headerButton) {
+      headerButton.textContent = '';
+      var chevron = document.createElement('span');
+      chevron.className = 'qs-header-chevron';
+      chevron.setAttribute('aria-hidden', 'true');
+      headerButton.appendChild(chevron);
+      headerButton.classList.add('qs-header-button');
+    }
+    headerRow.classList.add('qs-header-row');
+
+    function render() {
+      body.forEach(function (el) {
+        var hide = !expanded || (!SHOW_HIDDEN_POLL && pollParts.indexOf(el) !== -1);
+        if (hide) el.style.setProperty('display', 'none', 'important');
+        else el.style.setProperty('display', 'block');
+      });
+      headerRow.classList.toggle('qs-expanded', expanded);
+      if (headerButton) {
+        headerButton.setAttribute('aria-expanded', String(expanded));
+        headerButton.setAttribute('aria-label', expanded ? 'Minimize' : 'Expand');
+      }
+      if (!expanded && openDropdown) openDropdown.close(false);
+      relayout();
+    }
+
+    // Capture phase, so the click is handled here and never reaches the button's
+    // own Pendo action (which would leave the step).
+    headerRow.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      expanded = !expanded;
+      render();
+    }, true);
+
+    render();
   }
 
   // Build a button + listbox in place of a native <select>. The <select> stays
@@ -207,7 +246,7 @@
       }
     } catch (e) { /* fall through to manual sizing */ }
     var size = root.querySelector('._pendo-step-container-size');
-    if (size) size.style.height = 'auto';
+    if (size) size.style.setProperty('height', 'auto', 'important');
   }
 
   init(0);
